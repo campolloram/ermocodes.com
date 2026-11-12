@@ -122,6 +122,8 @@ describe('undoFade', () => {
     undoFade();
     expect(listeners.has('scroll')).toBe(false);
     expect(done.classes.has('fade-in')).toBe(false);
+    // Wire the listener again: a pending line that undoFade did not forget would fade in now.
+    fadeOnEnter([]);
     waiting.top = 100;
     scrollAndFrame();
     expect(waiting.classes.has('fade-in')).toBe(false);

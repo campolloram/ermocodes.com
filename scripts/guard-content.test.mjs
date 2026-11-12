@@ -253,26 +253,41 @@ describe('guard-content', () => {
     }
   });
 
-  test('scanDir on the shipped public/cv PDFs finds nothing to block', () => {
+  const names = loadBlockedNames();
+  test.skipIf(names.length === 0)(
+    'scanDir on the shipped public/cv PDFs finds nothing to block (incl. banned names)',
+    () => {
+      const cv = fileURLToPath(new URL('../public/cv', import.meta.url));
+      const { files, problems } = scanDir(cv, { blockedNames: names });
+      expect(files.filter((f) => f.endsWith('.pdf')).length).toBeGreaterThan(0);
+      expect(problems).toEqual([]);
+    },
+  );
+
+  test('scanDir on the shipped public/cv PDFs finds nothing to block (without banned names)', () => {
     const cv = fileURLToPath(new URL('../public/cv', import.meta.url));
-    const { files, problems } = scanDir(cv, { isMain: true });
+    const { files, problems } = scanDir(cv);
     expect(files.filter((f) => f.endsWith('.pdf')).length).toBeGreaterThan(0);
     expect(problems).toEqual([]);
   });
 
-  test('a corrupt Flate stream does not crash the scan; the rest of the PDF is still read', () => {
+  test('a corrupt Flate stream does not crash the scan; a valid stream after it is still read', () => {
     const dir = mkdtempSync(join(tmpdir(), 'guard-pdf-bad-'));
     try {
       const good = deflateSync(Buffer.from('(some text)'));
-      const corrupt = Buffer.concat([
-        Buffer.from(
-          '%PDF-1.4\n(write to someone@example.com)\n1 0 obj\n<< /Filter /FlateDecode >>\nstream\n',
-        ),
-        good.subarray(0, Math.floor(good.length / 2)), // truncated
-        Buffer.from('\nendstream\n2 0 obj\nstream\n'),
-        Buffer.from([0x78, 0x9c, 0xff, 0xff, 0xff, 0xff]), // bad header body
+      const hidden = deflateSync(Buffer.from('(write to someone@example.com)'));
+      const stream = (body) => [
+        Buffer.from('\n1 0 obj\n<< /Filter /FlateDecode >>\nstream\n'),
+        body,
         Buffer.from('\nendstream\nendobj\n'),
+      ];
+      const corrupt = Buffer.concat([
+        Buffer.from('%PDF-1.4\n'),
+        ...stream(good.subarray(0, Math.floor(good.length / 2))), // truncated
+        ...stream(Buffer.from([0x78, 0x9c, 0xff, 0xff, 0xff, 0xff])), // bad header body
+        ...stream(hidden), // the email is only inside this stream, never in the raw bytes
       ]);
+      expect(corrupt.toString('latin1')).not.toContain('someone@example.com');
       writeFileSync(join(dir, 'bad.pdf'), corrupt);
       let found = [];
       expect(() => {
@@ -280,7 +295,10 @@ describe('guard-content', () => {
       }).not.toThrow();
       expect(found).toContain('bad.pdf:email other than the contact address');
       // A corrupt PDF with nothing to flag is clean, not an error.
-      writeFileSync(join(dir, 'bad.pdf'), corrupt.subarray(corrupt.indexOf('1 0 obj')));
+      writeFileSync(
+        join(dir, 'bad.pdf'),
+        Buffer.concat([Buffer.from('%PDF-1.4\n'), ...stream(good.subarray(0, 5))]),
+      );
       expect(scanDir(dir).problems).toEqual([]);
     } finally {
       rmSync(dir, { recursive: true, force: true });
