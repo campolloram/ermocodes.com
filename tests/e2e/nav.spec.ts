@@ -677,6 +677,19 @@ test.describe('rotation', () => {
     expect(await builtAsPhone(page)).toBe(true);
   });
 
+  const PHONE_QUERY = '(pointer: coarse) and (max-height: 500px)';
+  /** Counts the phone query's `change` events (the ones that start the page's debounce timer). */
+  const countChanges = (page: Page) =>
+    page.evaluate((q) => {
+      const w = window as unknown as { __changes?: number };
+      w.__changes = 0;
+      matchMedia(q).addEventListener('change', () => {
+        w.__changes = (w.__changes ?? 0) + 1;
+      });
+    }, PHONE_QUERY);
+  const changes = (page: Page) =>
+    page.evaluate(() => (window as unknown as { __changes?: number }).__changes ?? 0);
+
   test('a quick there-and-back inside the debounce does not reload', async ({ page }, testInfo) => {
     test.setTimeout(60_000);
     await page.setViewportSize({ width: 820, height: 1000 });
@@ -687,17 +700,36 @@ test.describe('rotation', () => {
     // between two real resizes, which would be a real settle rather than a flicker.
     await page.clock.install({ time: 0 });
     await page.clock.pauseAt(1000); // time now moves only when the test says so
-    // The viewport change reaches the page asynchronously: wait for each state to show before
-    // moving the fake clock, or the timer could fire between the two states.
-    const phoneNow = () =>
-      page.evaluate(() => matchMedia('(pointer: coarse) and (max-height: 500px)').matches);
+    // `.matches` flips at once but the `change` event (which starts the page's timer) comes a
+    // frame later: wait for the event itself, or the fake clock could move before the timer exists.
+    await countChanges(page);
     await page.setViewportSize({ width: 1000, height: 420 });
-    await expect.poll(phoneNow).toBe(true);
+    await expect.poll(() => changes(page)).toBe(1);
     await page.clock.runFor(100);
     await page.setViewportSize({ width: 820, height: 1000 });
-    await expect.poll(phoneNow).toBe(false);
+    await expect.poll(() => changes(page)).toBe(2);
     await page.clock.runFor(1200); // well past the 300 ms debounce
     await page.waitForTimeout(300); // let a reload, if one was wrongly started, land
     expect(await marked(page), 'the settled state is the built one: no reload').toBe(true);
+  });
+
+  test('staying in the phone state past 300 ms of the change does reload', async ({
+    page,
+  }, testInfo) => {
+    test.setTimeout(60_000);
+    await page.setViewportSize({ width: 820, height: 1000 });
+    await page.goto('/');
+    needsWebGL(testInfo, await settle(page, testInfo.project.name));
+    await mark(page);
+    await page.clock.install({ time: 0 });
+    await page.clock.pauseAt(1000);
+    await countChanges(page);
+    const reloaded = page.waitForEvent('load', { timeout: 10_000 });
+    await page.setViewportSize({ width: 1000, height: 420 });
+    await expect.poll(() => changes(page)).toBe(1);
+    await page.clock.runFor(100);
+    await page.clock.runFor(250); // 350 ms after the change: past the 300 ms debounce
+    await reloaded;
+    expect(await marked(page)).toBe(false);
   });
 });
