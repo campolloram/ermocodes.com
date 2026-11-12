@@ -23,26 +23,6 @@ async function settle(page: Page, project: string): Promise<boolean> {
   return page.evaluate(() => document.documentElement.classList.contains('mscroll'));
 }
 
-/** Top of the target relative to the header line (scroll-padding-top), once it stops moving. */
-async function landed(page: Page, sel: string): Promise<number> {
-  let last = Number.NaN;
-  await expect
-    .poll(
-      async () => {
-        const top = await page.evaluate((s) => {
-          const pad = parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop) || 0;
-          return Math.round((document.querySelector(s)?.getBoundingClientRect().top ?? 1e6) - pad);
-        }, sel);
-        const still = top === last;
-        last = top;
-        return still;
-      },
-      { timeout: 8000, intervals: [250] },
-    )
-    .toBe(true);
-  return last;
-}
-
 for (const hash of ['#projects', '#queue', '#contact']) {
   test(`the ${hash} link lands on its section, sets the hash and moves focus`, async ({
     page,
@@ -52,7 +32,7 @@ for (const hash of ['#projects', '#queue', '#contact']) {
     // A click right after the browser scrolled the link into view: the case that used to stop
     // thousands of pixels short (smooth scroll measured from a stale position).
     await page.locator(`#main a[href="${hash}"]`).first().click();
-    expect(Math.abs(await landed(page, hash))).toBeLessThanOrEqual(2);
+    await landedOn(page, hash);
     expect(await page.evaluate(() => location.hash)).toBe(hash);
     // Focus moves to the section in every mode (smooth scroll or the browser's own jump).
     await expect.poll(() => page.evaluate(() => document.activeElement?.id)).toBe(hash.slice(1));
@@ -63,7 +43,7 @@ test('a direct #queue link lands on the queue once the pins are in', async ({ pa
   await page.goto('/#queue');
   await settle(page, testInfo.project.name);
   await page.waitForTimeout(600);
-  expect(Math.abs(await landed(page, '#queue'))).toBeLessThanOrEqual(2);
+  await landedOn(page, '#queue');
 });
 
 test('a direct #queue link still lands when WebGL fails after the probe', async ({
@@ -93,7 +73,7 @@ test('a direct #queue link still lands when WebGL fails after the probe', async 
   );
   // Firefox without a GPU fails the probe itself, so the long layout never comes up there.
   needsWebGL(testInfo, wasMotion);
-  expect(Math.abs(await landed(page, '#queue'))).toBeLessThanOrEqual(2);
+  await landedOn(page, '#queue');
   if (testInfo.project.name.startsWith('chromium')) {
     const cls = await page.evaluate(() => window.__ecCls ?? { value: 0, sources: [] });
     expect(cls.value, `layout shift: ${cls.sources.join(', ')}`).toBeLessThanOrEqual(CLS_BUDGET);
@@ -102,7 +82,7 @@ test('a direct #queue link still lands when WebGL fails after the probe', async 
   const y0 = await page.evaluate(() => Math.round(scrollY));
   await page.reload();
   await expect(page.locator('html')).not.toHaveClass(/\bmotion\b/, { timeout: 10_000 });
-  expect(Math.abs((await restingY(page)) - y0)).toBeLessThanOrEqual(2);
+  await restoredTo(page, y0);
 });
 
 test('the skip link moves focus to main', async ({ page }, testInfo) => {
@@ -226,10 +206,42 @@ async function restingY(page: Page): Promise<number> {
   return last;
 }
 
+/**
+ * Waits until scrollY is within 2px of `want`, then checks it holds there for a moment. The state
+ * to wait on is the target position itself: "scrollY stopped changing" is also true in the gap
+ * before the engine restores or starts a scroll, which let a load-starved runner read a stale value
+ * (#contact landed 510px off).
+ */
+async function restoredTo(page: Page, want: number): Promise<void> {
+  await expect
+    .poll(() => page.evaluate(() => Math.round(scrollY)), { timeout: 10_000, intervals: [100] })
+    .toBeGreaterThan(want - 3);
+  await expect
+    .poll(() => page.evaluate(() => Math.round(scrollY)), { timeout: 10_000, intervals: [100] })
+    .toBeLessThan(want + 3);
+  // It holds: nothing is still moving the page away from the place.
+  await page.waitForTimeout(300);
+  expect(Math.abs((await page.evaluate(() => Math.round(scrollY))) - want)).toBeLessThanOrEqual(2);
+}
+
+/** Waits until the section's top sits on the header line (within 2px), then checks it holds. */
+async function landedOn(page: Page, sel: string): Promise<void> {
+  const off = () =>
+    page.evaluate((s) => {
+      const pad = parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop) || 0;
+      return Math.round((document.querySelector(s)?.getBoundingClientRect().top ?? 1e6) - pad);
+    }, sel);
+  await expect
+    .poll(async () => Math.abs(await off()), { timeout: 10_000, intervals: [100] })
+    .toBeLessThanOrEqual(2);
+  await page.waitForTimeout(300);
+  expect(Math.abs(await off())).toBeLessThanOrEqual(2);
+}
+
 test('reload part-way down keeps the place; back from a #link returns to it', async ({
   page,
 }, testInfo) => {
-  test.setTimeout(60_000);
+  test.setTimeout(90_000);
   await page.goto('/');
   await settle(page, testInfo.project.name);
   await page.evaluate(() =>
@@ -241,11 +253,11 @@ test('reload part-way down keeps the place; back from a #link returns to it', as
   const y0 = await restingY(page);
   await page.reload();
   await settle(page, testInfo.project.name);
-  expect(Math.abs((await restingY(page)) - y0)).toBeLessThanOrEqual(2);
+  await restoredTo(page, y0);
   await page.locator('header a[href="#contact"]').click();
-  expect(Math.abs(await landed(page, '#contact'))).toBeLessThanOrEqual(2);
+  await landedOn(page, '#contact');
   await page.goBack();
-  expect(Math.abs((await restingY(page)) - y0)).toBeLessThanOrEqual(2);
+  await restoredTo(page, y0);
 });
 
 test('pressing kill a worker never moves the page or changes its height', async ({
@@ -522,4 +534,202 @@ test('on a phone the brand and the pause control draw their own focus ring', asy
     expect(ring.style).not.toBe('none');
     expect(ring.width).toBeGreaterThanOrEqual(2);
   }
+});
+
+// Gaps from the S4 review (old-repo issue 30): the fade on enter from a real scroll, the Lenis
+// keys, and the phone-query reload on rotation.
+
+test('a line below the fold is not faded before scroll, and is opaque after it enters', async ({
+  page,
+}, testInfo) => {
+  test.skip(isReduced(testInfo.project.name), 'reduced motion has no fade');
+  test.setTimeout(60_000);
+  await page.goto('/');
+  needsWebGL(testInfo, await settle(page, testInfo.project.name));
+  const line = page.locator('.stack-row').last();
+  const belowFold = await line.evaluate((el) => el.getBoundingClientRect().top > innerHeight);
+  expect(belowFold, 'the last stack row starts below the first screen').toBe(true);
+  await expect(line).not.toHaveClass(/\bfade-in\b/);
+  await expect(line).toHaveCSS('opacity', '1'); // never hidden up front: a scanner sees real text
+  await line.evaluate((el) => {
+    el.scrollIntoView({ block: 'center', behavior: 'instant' });
+  });
+  await expect(line).toHaveClass(/\bfade-in\b/, { timeout: 5000 });
+  await expect(line).toHaveCSS('opacity', '1', { timeout: 5000 });
+});
+
+test.describe('Lenis keys', () => {
+  test.beforeEach(async ({ page }, testInfo) => {
+    void page;
+    test.skip(
+      isReduced(testInfo.project.name) || testInfo.project.name.includes('mobile'),
+      'motion desktop projects (keyboard path)',
+    );
+  });
+  const y = (page: Page) => page.evaluate(() => Math.round(scrollY));
+  const max = (page: Page) =>
+    page.evaluate(() => Math.round(document.documentElement.scrollHeight - innerHeight));
+  /**
+   * Records, per key, whether the page's own key handler (Lenis, timeline.ts scrollKeys) took the
+   * press: a bubble-phase listener added after it sees defaultPrevented only if it did. Without
+   * this, Chromium's native End/Home/ArrowUp give the same scrollY and the tests pass either way.
+   */
+  const watchKeys = (page: Page) =>
+    page.evaluate(() => {
+      const w = window as Window & { __kd?: Record<string, boolean> };
+      w.__kd = {};
+      addEventListener('keydown', (e) => {
+        (w.__kd as Record<string, boolean>)[e.key] = e.defaultPrevented;
+      });
+    });
+  const taken = (page: Page, key: string) =>
+    page.evaluate((k) => (window as Window & { __kd?: Record<string, boolean> }).__kd?.[k], key);
+
+  test('End goes to the bottom, Home back to the top', async ({ page }, testInfo) => {
+    test.setTimeout(60_000);
+    await page.goto('/');
+    needsWebGL(testInfo, await settle(page, testInfo.project.name));
+    await page.locator('body').click({ position: { x: 5, y: 300 } });
+    await watchKeys(page);
+    await page.keyboard.press('End');
+    expect(await taken(page, 'End'), 'Lenis took End').toBe(true);
+    await expect
+      .poll(async () => (await max(page)) - (await y(page)), { timeout: 15_000 })
+      .toBeLessThanOrEqual(2);
+    await page.keyboard.press('Home');
+    expect(await taken(page, 'Home'), 'Lenis took Home').toBe(true);
+    await expect.poll(() => y(page), { timeout: 15_000 }).toBeLessThanOrEqual(2);
+  });
+
+  test('ArrowUp scrolls up by a small step', async ({ page }, testInfo) => {
+    test.setTimeout(60_000);
+    await page.goto('/');
+    needsWebGL(testInfo, await settle(page, testInfo.project.name));
+    await page.evaluate(() => scrollTo({ top: 2000, behavior: 'instant' }));
+    await restingY(page);
+    const before = await y(page);
+    await watchKeys(page);
+    await page.keyboard.press('ArrowUp');
+    expect(await taken(page, 'ArrowUp'), 'Lenis took ArrowUp').toBe(true);
+    await expect.poll(() => y(page), { timeout: 5000 }).toBeLessThan(before);
+    expect(before - (await restingY(page))).toBeLessThan(200);
+  });
+
+  test('Space on a focused button presses the button and does not scroll the page', async ({
+    page,
+  }, testInfo) => {
+    test.setTimeout(60_000);
+    await page.goto('/');
+    needsWebGL(testInfo, await settle(page, testInfo.project.name));
+    const ctl = page.locator('[data-mctl]');
+    await ctl.focus();
+    const before = await y(page);
+    await page.keyboard.press('Space');
+    await expect(page.locator('html')).toHaveClass(/\bmpaused\b/);
+    await page.waitForTimeout(600);
+    expect(await y(page)).toBe(before);
+  });
+});
+
+test.describe('rotation', () => {
+  test.beforeEach(async ({ page }, testInfo) => {
+    void page;
+    test.skip(testInfo.project.name !== 'chromium-mobile', 'coarse pointer: the phone query');
+  });
+  const mark = (page: Page) =>
+    page.evaluate(() => {
+      (window as unknown as { __rot?: number }).__rot = 1;
+    });
+  const marked = (page: Page) =>
+    page.evaluate(() => (window as unknown as { __rot?: number }).__rot === 1);
+
+  test('turning a phone sideways (still a short coarse screen) does not reload', async ({
+    page,
+  }, testInfo) => {
+    test.setTimeout(60_000);
+    await page.goto('/');
+    needsWebGL(testInfo, await settle(page, testInfo.project.name));
+    await mark(page);
+    await page.setViewportSize({ width: 844, height: 390 });
+    await page.waitForTimeout(1200); // well past the 300 ms debounce
+    expect(await marked(page)).toBe(true);
+  });
+
+  /** Whether the page was built as a phone: the Experience names are split into letters only above it. */
+  const builtAsPhone = (page: Page) =>
+    page.evaluate(() => document.querySelectorAll('.co-name .split').length === 0);
+
+  test('a tablet turned short (becomes a phone) reloads once the debounce settles', async ({
+    page,
+  }, testInfo) => {
+    test.setTimeout(60_000);
+    await page.setViewportSize({ width: 820, height: 1000 });
+    await page.goto('/');
+    needsWebGL(testInfo, await settle(page, testInfo.project.name));
+    expect(await builtAsPhone(page), 'a portrait tablet gets the stage layout').toBe(false);
+    await mark(page);
+    const reloaded = page.waitForEvent('load', { timeout: 10_000 });
+    await page.setViewportSize({ width: 1000, height: 420 });
+    await reloaded;
+    expect(await marked(page)).toBe(false);
+    // The reload builds the phone layout: Experience is a plain list there (no split names).
+    needsWebGL(testInfo, await settle(page, testInfo.project.name));
+    expect(await builtAsPhone(page)).toBe(true);
+  });
+
+  const PHONE_QUERY = '(pointer: coarse) and (max-height: 500px)';
+  /** Counts the phone query's `change` events (the ones that start the page's debounce timer). */
+  const countChanges = (page: Page) =>
+    page.evaluate((q) => {
+      const w = window as unknown as { __changes?: number };
+      w.__changes = 0;
+      matchMedia(q).addEventListener('change', () => {
+        w.__changes = (w.__changes ?? 0) + 1;
+      });
+    }, PHONE_QUERY);
+  const changes = (page: Page) =>
+    page.evaluate(() => (window as unknown as { __changes?: number }).__changes ?? 0);
+
+  test('a quick there-and-back inside the debounce does not reload', async ({ page }, testInfo) => {
+    test.setTimeout(60_000);
+    await page.setViewportSize({ width: 820, height: 1000 });
+    await page.goto('/');
+    needsWebGL(testInfo, await settle(page, testInfo.project.name));
+    await mark(page);
+    // A fake clock makes "within the debounce" exact: a starved runner can take longer than 300 ms
+    // between two real resizes, which would be a real settle rather than a flicker.
+    await page.clock.install({ time: 0 });
+    await page.clock.pauseAt(1000); // time now moves only when the test says so
+    // `.matches` flips at once but the `change` event (which starts the page's timer) comes a
+    // frame later: wait for the event itself, or the fake clock could move before the timer exists.
+    await countChanges(page);
+    await page.setViewportSize({ width: 1000, height: 420 });
+    await expect.poll(() => changes(page)).toBe(1);
+    await page.clock.runFor(100);
+    await page.setViewportSize({ width: 820, height: 1000 });
+    await expect.poll(() => changes(page)).toBe(2);
+    await page.clock.runFor(1200); // well past the 300 ms debounce
+    await page.waitForTimeout(300); // let a reload, if one was wrongly started, land
+    expect(await marked(page), 'the settled state is the built one: no reload').toBe(true);
+  });
+
+  test('staying in the phone state past 300 ms of the change does reload', async ({
+    page,
+  }, testInfo) => {
+    test.setTimeout(60_000);
+    await page.setViewportSize({ width: 820, height: 1000 });
+    await page.goto('/');
+    needsWebGL(testInfo, await settle(page, testInfo.project.name));
+    await mark(page);
+    await page.clock.install({ time: 0 });
+    await page.clock.pauseAt(1000);
+    await countChanges(page);
+    const reloaded = page.waitForEvent('load', { timeout: 10_000 });
+    await page.setViewportSize({ width: 1000, height: 420 });
+    await expect.poll(() => changes(page)).toBe(1);
+    await page.clock.runFor(100);
+    await page.clock.runFor(250); // 350 ms after the change: past the 300 ms debounce
+    await reloaded;
+    expect(await marked(page)).toBe(false);
+  });
 });
