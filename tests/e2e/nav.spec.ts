@@ -683,10 +683,14 @@ test.describe('rotation', () => {
     await page.goto('/');
     needsWebGL(testInfo, await settle(page, testInfo.project.name));
     await mark(page);
+    // A fake clock makes "within the debounce" exact: a starved runner can take longer than 300 ms
+    // between two real resizes, which would be a real settle rather than a flicker.
+    await page.clock.install();
     await page.setViewportSize({ width: 1000, height: 420 });
-    await page.waitForTimeout(100);
+    await page.clock.runFor(100);
     await page.setViewportSize({ width: 820, height: 1000 });
-    await page.waitForTimeout(1200); // well past the 300 ms debounce
+    await page.clock.runFor(1200); // well past the 300 ms debounce
+    await page.waitForTimeout(300); // let a reload, if one was wrongly started, land
     expect(await marked(page), 'the settled state is the built one: no reload').toBe(true);
   });
 });
