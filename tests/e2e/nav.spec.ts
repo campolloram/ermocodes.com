@@ -685,10 +685,17 @@ test.describe('rotation', () => {
     await mark(page);
     // A fake clock makes "within the debounce" exact: a starved runner can take longer than 300 ms
     // between two real resizes, which would be a real settle rather than a flicker.
-    await page.clock.install();
+    await page.clock.install({ time: 0 });
+    await page.clock.pauseAt(1000); // time now moves only when the test says so
+    // The viewport change reaches the page asynchronously: wait for each state to show before
+    // moving the fake clock, or the timer could fire between the two states.
+    const phoneNow = () =>
+      page.evaluate(() => matchMedia('(pointer: coarse) and (max-height: 500px)').matches);
     await page.setViewportSize({ width: 1000, height: 420 });
+    await expect.poll(phoneNow).toBe(true);
     await page.clock.runFor(100);
     await page.setViewportSize({ width: 820, height: 1000 });
+    await expect.poll(phoneNow).toBe(false);
     await page.clock.runFor(1200); // well past the 300 ms debounce
     await page.waitForTimeout(300); // let a reload, if one was wrongly started, land
     expect(await marked(page), 'the settled state is the built one: no reload').toBe(true);
