@@ -112,7 +112,7 @@ function setupScrollLayer(touch: boolean): { raf: (ms: number) => void; lenis: L
     syncLenis(lenis);
     lenis.scrollTo(landingY(el), { duration: SCROLL.anchorDuration, force: true });
   };
-  document.addEventListener('click', (e) => {
+  const onClick = (e: MouseEvent): void => {
     if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey)
       return;
     const a = (e.target as Element | null)?.closest?.('a[href^="#"]');
@@ -123,11 +123,18 @@ function setupScrollLayer(touch: boolean): { raf: (ms: number) => void; lenis: L
     if (location.hash !== hash) history.pushState(null, '', hash);
     focusTarget(el);
     glideTo(el);
-  });
+  };
+  document.addEventListener('click', onClick);
   // Back/forward between in-page entries, or a hash typed into the address bar.
-  addEventListener('hashchange', () => {
+  const onHashchange = (): void => {
     const el = targetOf(location.hash);
     if (el) glideTo(el);
+  };
+  addEventListener('hashchange', onHashchange);
+  disposers.push(() => {
+    document.removeEventListener('click', onClick);
+    removeEventListener('hashchange', onHashchange);
+    lenis?.destroy();
   });
   if (lenis) scrollKeys(lenis);
   return { raf: (ms) => lenis?.raf(ms), lenis };
@@ -142,7 +149,7 @@ function syncLenis(lenis: Lenis): void {
 /** Removers for the listeners that outlive setup (see disposeScrollListeners). */
 const disposers: Array<() => void> = [];
 
-/** Removes the key and Experience-stop listeners (the fall-back to plain DOM: native keys again). */
+/** Removes the key, Experience-stop, link and hashchange listeners and Lenis (the fall-back to plain DOM: native scrolling again). */
 export function disposeScrollListeners(): void {
   for (const d of disposers.splice(0)) d();
 }
@@ -152,7 +159,6 @@ const OWN_KEYS = 'input, textarea, select, [contenteditable]:not([contenteditabl
 
 /** Whether an element between the target and the page can still scroll that way by itself. */
 function innerScroller(from: Element | null, down: boolean): boolean {
-  if (from === document.body || from === document.documentElement) return false;
   for (let el = from; el && el !== document.body && el !== document.documentElement;) {
     const oy = getComputedStyle(el).overflowY;
     if ((oy === 'auto' || oy === 'scroll') && el.scrollHeight > el.clientHeight) {

@@ -733,3 +733,45 @@ test.describe('rotation', () => {
     expect(await marked(page)).toBe(false);
   });
 });
+
+test('a fall-back after the scroll layer started gives PageDown, the wheel and in-page links back', async ({
+  page,
+}, testInfo) => {
+  test.skip(isReduced(testInfo.project.name), 'reduced motion never starts the scroll layer');
+  test.setTimeout(60_000);
+  // Throws once the scroll layer is up (Lenis, key, click and hashchange handlers are in), before
+  // the loop drives Lenis: the late fall-back must hand all of it back to the browser.
+  await page.addInitScript(() => {
+    const orig = MediaQueryList.prototype.addEventListener;
+    MediaQueryList.prototype.addEventListener = function (
+      this: MediaQueryList,
+      ...a: Parameters<typeof orig>
+    ) {
+      if (a[0] === 'change' && /pointer: coarse/.test(this.media)) throw new Error('boom-late');
+      return orig.apply(this, a);
+    } as typeof orig;
+  });
+  await page.goto('/');
+  needsWebGL(testInfo, await hasWebGL(page));
+  await expect(page.locator('html')).toHaveAttribute('data-mfallback', /boom-late/, {
+    timeout: 20_000,
+  });
+  await expect(page.locator('html')).not.toHaveClass(/mscroll/);
+  const y = () => page.evaluate(() => Math.round(scrollY));
+  await page.mouse.move(200, 300);
+  const y0 = await y();
+  await page.keyboard.press('PageDown');
+  await expect.poll(y, { timeout: 5000 }).toBeGreaterThan(y0 + 100);
+  const y1 = await y();
+  await page.mouse.wheel(0, 600);
+  await expect.poll(y, { timeout: 5000 }).toBeGreaterThan(y1 + 100);
+  // Native smooth wheel scrolling may still be gliding: reset until it has come to rest at the top.
+  await expect
+    .poll(async () => {
+      await page.evaluate(() => scrollTo({ top: 0, behavior: 'instant' }));
+      return y();
+    })
+    .toBe(0);
+  await page.locator('a[href="#contact"]:visible').first().click();
+  await expect.poll(y, { timeout: 10_000 }).toBeGreaterThan(1000);
+});

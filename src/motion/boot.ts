@@ -132,7 +132,7 @@ const savedPlace = (): { i: number; f: number } | null => {
 /** The hero name is drawn as text again (the particle intro is over, or never will finish). */
 const showName = (): void => root.classList.remove('pbuild', 'pshow');
 
-/** Removes the scroll layer's key and Experience-stop listeners (set once the timeline loads). */
+/** Removes the scroll layer's listeners and Lenis (set once the timeline loads). */
 let disposeScroll: (() => void) | null = null;
 
 const plainDom = (): void => {
@@ -144,7 +144,7 @@ const plainDom = (): void => {
   const r = exp?.getBoundingClientRect();
   const hide = exp && r && (r.bottom <= 0 || r.top >= innerHeight) ? exp : null;
   hide?.classList.add('mswap');
-  root.classList.remove('pwait', 'motion', 'mpaused');
+  root.classList.remove('pwait', 'motion', 'mpaused', 'mscroll');
   showName();
   undoFade();
   undoPrepare();
