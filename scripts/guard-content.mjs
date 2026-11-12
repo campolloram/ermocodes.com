@@ -140,8 +140,10 @@ export function pdfText(buffer) {
     try {
       const text = inflateSync(buffer.subarray(start, end)).toString('latin1');
       parts.push(parsed ? (text.match(/\/URI\s*\([^)]*\)/g) ?? []).join('\n') : text);
-    } catch {
-      // An image or font stream is not Flate text: nothing to read.
+    } catch (err) {
+      // An image or font stream is not Flate text (a zlib data error): nothing to read. Anything
+      // else is a real failure and must not pass the guard silently.
+      if (!/^Z_/.test(err?.code ?? '')) throw err;
     }
   }
   return parts.join('\n');

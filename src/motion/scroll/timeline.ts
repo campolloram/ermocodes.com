@@ -109,8 +109,7 @@ function setupScrollLayer(touch: boolean): { raf: (ms: number) => void; lenis: L
     snapState.rest = null;
     // Without Lenis the browser glides (on the compositor, so a busy main thread cannot stall it).
     if (!lenis) return void scrollTo({ top: landingY(el), behavior: 'smooth' });
-    if (lenis.isScrolling !== 'smooth' && Math.abs(lenis.animatedScroll - scrollY) > 1)
-      lenis.scrollTo(scrollY, { immediate: true, force: true });
+    syncLenis(lenis);
     lenis.scrollTo(landingY(el), { duration: SCROLL.anchorDuration, force: true });
   };
   document.addEventListener('click', (e) => {
@@ -134,11 +133,26 @@ function setupScrollLayer(touch: boolean): { raf: (ms: number) => void; lenis: L
   return { raf: (ms) => lenis?.raf(ms), lenis };
 }
 
+/** Takes Lenis to the real scroll when it is idle and has not seen a native move or focus jump. */
+function syncLenis(lenis: Lenis): void {
+  if (lenis.isScrolling !== 'smooth' && Math.abs(lenis.animatedScroll - scrollY) > 1)
+    lenis.scrollTo(scrollY, { immediate: true, force: true });
+}
+
+/** Removers for the listeners that outlive setup (see disposeScrollListeners). */
+const disposers: Array<() => void> = [];
+
+/** Removes the key and Experience-stop listeners (the fall-back to plain DOM: native keys again). */
+export function disposeScrollListeners(): void {
+  for (const d of disposers.splice(0)) d();
+}
+
 /** Elements that use a key themselves: typing, choosing, or Space pressing a control. */
 const OWN_KEYS = 'input, textarea, select, [contenteditable]:not([contenteditable="false"])';
 
 /** Whether an element between the target and the page can still scroll that way by itself. */
 function innerScroller(from: Element | null, down: boolean): boolean {
+  if (from === document.body || from === document.documentElement) return false;
   for (let el = from; el && el !== document.body && el !== document.documentElement;) {
     const oy = getComputedStyle(el).overflowY;
     if ((oy === 'auto' || oy === 'scroll') && el.scrollHeight > el.clientHeight) {
@@ -159,7 +173,7 @@ function innerScroller(from: Element | null, down: boolean): boolean {
  * control uses stay theirs, as does an inner box that can still scroll that way.
  */
 function scrollKeys(lenis: Lenis): void {
-  addEventListener('keydown', (e) => {
+  const onKeydown = (e: KeyboardEvent): void => {
     if (e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey || lenis.isStopped) return;
     const t = e.target instanceof Element ? e.target : null;
     if (t?.closest(OWN_KEYS)) return;
@@ -169,15 +183,19 @@ function scrollKeys(lenis: Lenis): void {
     // Repeated presses add up from where the glide is going; a scroll Lenis has not seen yet
     // (a focus, a native jump) is taken from the page first.
     const gliding = lenis.isScrolling === 'smooth';
-    if (!gliding && Math.abs(lenis.animatedScroll - scrollY) > 1)
-      lenis.scrollTo(scrollY, { immediate: true, force: true });
+    syncLenis(lenis);
     const from = gliding ? lenis.targetScroll : scrollY;
     lenis.scrollTo(Math.min(lenis.limit, Math.max(0, from + d)));
-  });
+  };
+  addEventListener('keydown', onKeydown);
+  disposers.push(() => removeEventListener('keydown', onKeydown));
 }
 
 /** Shared with the link glide: whether the reader moved the page since the last glide or load. */
 const snapState = { moved: false, rest: null as number | null };
+
+/** How far past the first or last stop (in chapter heights) the Experience stops still apply. */
+const STOP_BAND = 0.6;
 
 /**
  * EXPERIENCE stops on the Lenis path (a mouse or trackpad on desktop): one company per step. A
@@ -193,13 +211,18 @@ function experienceStops(lenis: Lenis): void {
   const run = qs('#experience .exp-run');
   if (!sec || !run?.children.length) return;
   const C = SCROLL.snap;
+  const firstChapter = run.children[0];
+  if (!(firstChapter instanceof HTMLElement)) return;
   const stops = (): { y: number[]; ch: number } => {
     const top = sec.getBoundingClientRect().top + scrollY;
-    const ch = (run.children[0] as HTMLElement).offsetHeight;
+    const ch = firstChapter.offsetHeight;
     return { y: Array.from(run.children, (_, k) => Math.round(top + (k + C.at) * ch)), ch };
   };
-  for (const t of ['wheel', 'keydown', 'pointerdown', 'touchstart'])
-    addEventListener(t, () => (snapState.moved = true), { passive: true, capture: true });
+  const markMoved = (): void => void (snapState.moved = true);
+  for (const t of ['wheel', 'keydown', 'pointerdown', 'touchstart']) {
+    addEventListener(t, markMoved, { passive: true, capture: true });
+    disposers.push(() => removeEventListener(t, markMoved, { capture: true }));
+  }
   const go = (y: number): void => {
     snapState.rest = y;
     if (Math.abs(y - scrollY) < 2) return;
@@ -214,10 +237,10 @@ function experienceStops(lenis: Lenis): void {
     const last = s[s.length - 1]!;
     const nearest = nearestTo(s, y);
     const rest = snapState.rest;
-    if (rest !== null && y >= first - 0.6 * ch && y <= last + 0.6 * ch) {
+    if (rest !== null && y >= first - STOP_BAND * ch && y <= last + STOP_BAND * ch) {
       const d = y - rest;
       if (Math.abs(d) <= C.nudge) return go(rest);
-      if (Math.abs(d) < 0.6 * ch) {
+      if (Math.abs(d) < STOP_BAND * ch) {
         const next = s[s.indexOf(nearestTo(s, rest)) + Math.sign(d)];
         if (next !== undefined) return go(next);
         snapState.rest = null;
@@ -228,14 +251,16 @@ function experienceStops(lenis: Lenis): void {
     snapState.rest = null;
     // Not at a stop: catch a reader coming down before the first, or up after the last.
     const down = lenis.direction >= 0;
-    if (down ? y >= first - 0.6 * ch && y <= last : y >= first && y <= last + 0.6 * ch) go(nearest);
+    if (down ? y >= first - STOP_BAND * ch && y <= last : y >= first && y <= last + STOP_BAND * ch)
+      go(nearest);
   };
   let timer = 0;
   function schedule(): void {
     clearTimeout(timer);
     timer = window.setTimeout(settle, C.settleMs);
   }
-  lenis.on('scroll', schedule);
+  const off = lenis.on('scroll', schedule);
+  disposers.push(off, () => clearTimeout(timer));
 }
 
 const nearestTo = (s: number[], v: number): number =>

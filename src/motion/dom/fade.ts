@@ -14,11 +14,22 @@ function check(): void {
   queued = false;
   const h = innerHeight;
   for (const el of pending) {
+    if (el.isConnected === false) {
+      pending.delete(el);
+      continue;
+    }
     const r = el.getBoundingClientRect();
     if (r.bottom < 0 || r.top > h) continue;
     el.classList.add('fade-in');
     pending.delete(el);
   }
+  // Every line has faded in (or left the page): nothing left to watch.
+  if (!pending.size) unwire();
+}
+
+function unwire(): void {
+  removeEventListener('scroll', onScroll);
+  wired = false;
 }
 
 function onScroll(): void {
@@ -43,8 +54,8 @@ export function fadeOnEnter(els: Iterable<Element>): void {
 
 /** Puts every line back to plain (the fall-back to plain DOM). */
 export function undoFade(): void {
-  removeEventListener('scroll', onScroll);
-  wired = false;
+  unwire();
+  queued = false;
   pending.clear();
   document.querySelectorAll('.fade-in').forEach((el) => el.classList.remove('fade-in'));
 }

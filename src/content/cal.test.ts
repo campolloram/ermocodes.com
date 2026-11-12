@@ -6,10 +6,14 @@ describe('calHref', () => {
     expect(calHref('ermocodes/intro')).toBe('https://cal.com/ermocodes/intro');
     expect(calHref('https://cal.com/ermocodes/intro')).toBe('https://cal.com/ermocodes/intro');
   });
-  test('rejects dot-only segments and other hosts', () => {
-    expect(calHref('ermocodes/../someone/call')).toBeUndefined();
-    expect(calHref('https://cal.com/ermocodes/../someone/call')).toBeUndefined();
-    expect(calHref('https://evil.com/ermocodes/x')).toBeUndefined();
+  test('throws on dot-only segments and other hosts', () => {
+    expect(() => calHref('ermocodes/../someone/call')).toThrow(/PUBLIC_CAL_LINK/);
+    expect(() => calHref('https://cal.com/ermocodes/../someone/call')).toThrow(/PUBLIC_CAL_LINK/);
+    expect(() => calHref('https://evil.com/ermocodes/x')).toThrow(/PUBLIC_CAL_LINK/);
+  });
+  test('unset or blank leaves the buttons off', () => {
     expect(calHref(undefined)).toBeUndefined();
+    expect(calHref('')).toBeUndefined();
+    expect(calHref('  ')).toBeUndefined();
   });
 });
