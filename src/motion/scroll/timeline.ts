@@ -149,7 +149,10 @@ function syncLenis(lenis: Lenis): void {
 /** Removers for the listeners that outlive setup (see disposeScrollListeners). */
 const disposers: Array<() => void> = [];
 
-/** Removes the key, Experience-stop, link and hashchange listeners and Lenis (the fall-back to plain DOM: native scrolling again). */
+/**
+ * Removes the key, Experience-stop, link and hashchange listeners and Lenis (the fall-back to plain
+ * DOM: native scrolling again).
+ */
 export function disposeScrollListeners(): void {
   for (const d of disposers.splice(0)) d();
 }

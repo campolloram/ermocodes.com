@@ -762,16 +762,20 @@ test('a fall-back after the scroll layer started gives PageDown, the wheel and i
   const y0 = await y();
   await page.keyboard.press('PageDown');
   await expect.poll(y, { timeout: 5000 }).toBeGreaterThan(y0 + 100);
-  const y1 = await y();
+  await expect(page.locator('html')).not.toHaveClass(/lenis/);
+  // Native smooth scrolling may still be gliding: reset until it has come to rest at the top, so the
+  // wheel step below starts from a known position and only a live wheel can move the page.
+  const resetTop = () =>
+    expect
+      .poll(async () => {
+        await page.evaluate(() => scrollTo({ top: 0, behavior: 'instant' }));
+        return y();
+      })
+      .toBe(0);
+  await resetTop();
   await page.mouse.wheel(0, 600);
-  await expect.poll(y, { timeout: 5000 }).toBeGreaterThan(y1 + 100);
-  // Native smooth wheel scrolling may still be gliding: reset until it has come to rest at the top.
-  await expect
-    .poll(async () => {
-      await page.evaluate(() => scrollTo({ top: 0, behavior: 'instant' }));
-      return y();
-    })
-    .toBe(0);
+  await expect.poll(y, { timeout: 5000 }).toBeGreaterThan(50);
+  await resetTop();
   await page.locator('a[href="#contact"]:visible').first().click();
   await expect.poll(y, { timeout: 10_000 }).toBeGreaterThan(1000);
 });
