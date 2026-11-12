@@ -107,9 +107,16 @@ test('no WebGL: reload part-way down and Back from #contact keep the reader in p
   expect(Math.abs((await restingY(page)) - y0)).toBeLessThanOrEqual(2);
   await page.locator('header a[href="#contact"]').click();
   await expect.poll(() => page.evaluate(() => location.hash)).toBe('#contact');
-  await page.waitForTimeout(800);
+  // The jump to #contact has come to rest (and left y0 behind) before Back.
+  expect(Math.abs((await restingY(page)) - y0)).toBeGreaterThan(2);
   await page.goBack();
-  await page.waitForTimeout(800);
+  await expect.poll(() => page.evaluate(() => location.hash)).toBe('');
+  // Back restores the scroll position asynchronously: wait for it to land, then for it to hold.
+  await expect
+    .poll(async () => Math.abs((await page.evaluate(() => Math.round(scrollY))) - y0), {
+      timeout: 10_000,
+    })
+    .toBeLessThanOrEqual(2);
   expect(Math.abs((await restingY(page)) - y0)).toBeLessThanOrEqual(2);
 });
 
