@@ -10,7 +10,9 @@ const css = readFileSync(
 
 describe('motion-scenes.css mirrors motion/config.ts', () => {
   test('the native snap margin is 100svh minus snap.at of a 60svh chapter', () => {
-    const chapter = Number(/height: (\d+)svh;\s*\n\s*scroll-snap-align/.exec(css)?.[1] ?? 60);
+    const found = /height: (\d+)svh;\s*\n\s*scroll-snap-align/.exec(css)?.[1];
+    expect(found, 'chapter height (svh) not found before scroll-snap-align').toBeDefined();
+    const chapter = Number(found);
     expect(css).toContain(`${chapter}svh`);
     const m = /scroll-margin-top: calc\((\d+)svh/.exec(css);
     expect(Number(m?.[1])).toBeCloseTo(100 - SCROLL.snap.at * chapter, 5);

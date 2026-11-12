@@ -53,7 +53,9 @@ async function nameReadable(page: Page): Promise<void> {
 
 /** The name is readable through accessibility at every moment, whatever is painted. */
 async function nameInA11yTree(page: Page): Promise<void> {
-  await expect(page.getByRole('heading', { level: 1 })).toHaveAccessibleName(SITE.name);
+  await expect(page.getByRole('heading', { level: 1 })).toHaveAccessibleName(SITE.name, {
+    timeout: 2_000,
+  });
 }
 
 /** Computed opacity of the two drawn words. */

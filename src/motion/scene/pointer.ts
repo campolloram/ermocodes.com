@@ -2,7 +2,8 @@
 // follow any pointer; the name's melt follows the mouse only.
 export const ptr = { x: 0, y: 0, tx: 0, ty: 0, cx: -9999, cy: -9999, on: 0 };
 /** The mouse over the page (never a finger or a pen): the melt follows only this. */
-export const mouse = { x: -1e4, y: -1e4, on: false };
+const mouseState = { x: -1e4, y: -1e4, on: false };
+export const mouse: Readonly<typeof mouseState> = mouseState;
 
 export function bindPointer(onActivity: () => void): void {
   const grid = (cx: number, cy: number) => {
@@ -18,22 +19,22 @@ export function bindPointer(onActivity: () => void): void {
     (e) => {
       grid(e.clientX, e.clientY);
       if (e.pointerType === 'mouse') {
-        mouse.x = e.clientX;
-        mouse.y = e.clientY;
-        mouse.on = true;
-      } else mouse.on = false;
+        mouseState.x = e.clientX;
+        mouseState.y = e.clientY;
+        mouseState.on = true;
+      } else mouseState.on = false;
     },
     { passive: true },
   );
   document.addEventListener('mouseleave', () => {
     ptr.on = 0;
-    mouse.on = false;
+    mouseState.on = false;
   });
-  addEventListener('blur', () => (mouse.on = false));
+  addEventListener('blur', () => (mouseState.on = false));
   const touch = (e: TouchEvent) => {
     const t = e.touches[0];
     if (!t) return;
-    mouse.on = false;
+    mouseState.on = false;
     grid(t.clientX, t.clientY);
   };
   addEventListener('touchstart', touch, { passive: true });

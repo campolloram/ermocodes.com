@@ -132,6 +132,9 @@ const savedPlace = (): { i: number; f: number } | null => {
 /** The hero name is drawn as text again (the particle intro is over, or never will finish). */
 const showName = (): void => root.classList.remove('pbuild', 'pshow');
 
+/** Removes the scroll layer's listeners and Lenis (set once the timeline loads). */
+let disposeScroll: (() => void) | null = null;
+
 const plainDom = (): void => {
   const restore = keepReaderPlace();
   // When the held scenes' length comes off, Chrome scores the Experience section as moved (its
@@ -141,15 +144,17 @@ const plainDom = (): void => {
   const r = exp?.getBoundingClientRect();
   const hide = exp && r && (r.bottom <= 0 || r.top >= innerHeight) ? exp : null;
   hide?.classList.add('mswap');
-  root.classList.remove('pwait', 'motion', 'mpaused');
+  root.classList.remove('pwait', 'motion', 'mpaused', 'mscroll');
   showName();
   undoFade();
   undoPrepare();
+  disposeScroll?.();
   restore();
   if (hide) requestAnimationFrame(() => setTimeout(() => hide.classList.remove('mswap'), 0));
 };
 /** Gives up on the motion layer: plain DOM, the reason left on html[data-mfallback] for tests. */
 const fallBack = (why: unknown): void => {
+  console.warn('[motion] falling back to plain DOM:', why);
   root.dataset.mfallback = (why instanceof Error ? why.message : String(why)).slice(0, 120);
   plainDom();
 };
@@ -311,7 +316,8 @@ async function run(canvas: HTMLCanvasElement): Promise<void> {
     return;
   }
 
-  const { initScroll } = await timeline!;
+  const { initScroll, disposeScrollListeners } = await timeline!;
+  disposeScroll = disposeScrollListeners;
   await yieldTask();
   if (abandoned()) return;
   const scroll = initScroll({ touch: coarse });
