@@ -1,0 +1,91 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+html {
+  background: var(--ink);
+  color: var(--paper);
+  font-family: var(--f);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  scroll-behavior: smooth;
+  scroll-padding-top: var(--head);
+}
+body {
+  margin: 0;
+  background: var(--ink);
+  overflow-x: hidden;
+  font-size: 15px;
+  line-height: 1.5;
+}
+::selection {
+  background: var(--acc);
+  color: var(--ink);
+}
+a {
+  color: inherit;
+}
+p,
+h1,
+h2,
+h3,
+h4,
+ul,
+ol,
+dl,
+dd,
+figure {
+  margin: 0;
+  padding: 0;
+  font-weight: 400;
+}
+ul,
+ol {
+  list-style: none;
+}
+.sr {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.skip {
+  position: absolute;
+  left: var(--gut);
+  top: -100px;
+  z-index: 10;
+  padding: 12px 16px;
+  background: var(--acc);
+  color: var(--ink);
+}
+.skip:focus {
+  top: 8px;
+}
+:focus-visible {
+  outline: 2px solid var(--acc);
+  outline-offset: 4px;
+}
+/* In-page links move focus to their section (or main): the reading point moves, no box is drawn. */
+main[tabindex='-1']:focus,
+section[tabindex='-1']:focus {
+  outline: none;
+}
+main {
+  position: relative;
+  z-index: 1;
+}
+
+/* ---------- matte: flat grain, no glow, no gradient on the page ---------- */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 6;
+  pointer-events: none;
+  opacity: 0.2;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1.5 0 0 0 -.8'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")
+    0 0 / 96px 96px;
+}

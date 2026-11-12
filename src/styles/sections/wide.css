@@ -1,0 +1,131 @@
+/* ---------- wide screens: the editorial split ---------- */
+@media (min-width: 900px) {
+  body {
+    font-size: 16px;
+  }
+  .top {
+    padding-top: 18px;
+  }
+  .brand,
+  .top .bracket {
+    font-size: 17px;
+  }
+  .lbl {
+    font-size: 13px;
+  }
+  .hero {
+    display: block;
+    padding: 0;
+  }
+  .hero .lbl {
+    position: absolute;
+    left: var(--gut);
+    bottom: calc(30px + 218px);
+  }
+  .name {
+    position: absolute;
+    inset: 0;
+    margin: 0;
+    display: block;
+  }
+  .w {
+    position: absolute;
+    font-size: 12.4vw;
+    padding: 0;
+  }
+  .w1 {
+    left: calc(var(--gut) - 0.09em);
+    top: 15vh;
+  }
+  .w2 {
+    right: calc(var(--gut) - 0.1em);
+    top: 48vh;
+  }
+  .fig-slot {
+    position: absolute;
+    left: 45vw;
+    width: 36vw;
+    top: 10vh;
+    height: 82vh;
+  }
+  .hero-info {
+    position: absolute;
+    left: var(--gut);
+    bottom: 64px;
+  }
+  .hero-info .lede {
+    margin: 0;
+    font-size: 18px;
+    max-width: 30ch;
+  }
+  .proof {
+    font-size: 14px;
+    max-width: none;
+  }
+  .visa {
+    font-size: 13px;
+    max-width: none;
+  }
+  .hero-links {
+    gap: 0 20px;
+  }
+  .hero-links .bracket {
+    font-size: 17px;
+    min-height: 48px;
+  }
+  .meta {
+    position: absolute;
+    left: var(--gut);
+    right: calc(var(--gut) + 380px);
+    bottom: 30px;
+    margin: 0;
+    font-size: 13px;
+  }
+  .meta .scroll {
+    display: inline;
+  }
+  .meta .where {
+    font-size: 13px;
+    letter-spacing: 0.02em;
+  }
+  .foot {
+    max-width: none;
+    justify-content: flex-start;
+    gap: 8px 48px;
+    font-size: 13px;
+  }
+  .sec-head {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .co-name {
+    font-size: min(calc((100vw - 2 * var(--gut)) / (var(--n) * 0.66)), 24svh);
+  }
+  .co-meta {
+    font-size: 16px;
+  }
+  .talk {
+    font-size: min(17vw, 40svh);
+  }
+  .talk .ln:last-child {
+    padding-left: 1.28em;
+  }
+  .contact {
+    padding-bottom: 32px;
+  }
+  .links {
+    gap: 8px 44px;
+  }
+  .links .bracket {
+    font-size: 22px;
+  }
+  .ask {
+    font-size: 22px;
+  }
+  .stack-row {
+    grid-template-columns: 22ch 1fr;
+    align-items: baseline;
+  }
+  .still {
+    font-size: 13px;
+  }
+}

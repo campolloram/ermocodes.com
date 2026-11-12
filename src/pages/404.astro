@@ -1,0 +1,22 @@
+---
+import Bracket from '../components/chrome/Bracket.astro';
+import Label from '../components/chrome/Label.astro';
+import TopBar from '../components/chrome/TopBar.astro';
+import Base from '../layouts/Base.astro';
+---
+
+<Base title="Not found · ermocodes" description="This page does not exist." noindex>
+  <TopBar slot="top" offPage />
+  <section class="sec contact" aria-labelledby="nf-h">
+    <Label text="404 / not found" />
+    <p class="ask">That page does not exist.</p>
+    <h1 class="talk" id="nf-h">
+      <span class="sr">Not found</span>
+      <span class="ln" aria-hidden="true">LOST</span>
+      <span class="ln" aria-hidden="true">PAGE</span>
+    </h1>
+    <div class="links">
+      <Bracket href="/" label="back to the cv" />
+    </div>
+  </section>
+</Base>

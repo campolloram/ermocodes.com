@@ -1,0 +1,29 @@
+---
+import About from '../components/sections/About.astro';
+import Contact from '../components/sections/Contact.astro';
+import Experience from '../components/sections/Experience.astro';
+import Hero from '../components/sections/Hero.astro';
+import Projects from '../components/sections/Projects.astro';
+import QueueDemo from '../components/sections/QueueDemo.astro';
+import Studio from '../components/sections/Studio.astro';
+import Stack from '../components/sections/Stack.astro';
+import WhatIDo from '../components/sections/WhatIDo.astro';
+import Stage from '../components/chrome/Stage.astro';
+import TopBar from '../components/chrome/TopBar.astro';
+import { SITE } from '../content/site';
+import Base from '../layouts/Base.astro';
+---
+
+<Base title={SITE.title} description={SITE.description} path="/">
+  <Stage slot="top" />
+  <TopBar slot="top" />
+  <Hero />
+  <WhatIDo />
+  <Experience />
+  <Projects />
+  <Stack />
+  <QueueDemo />
+  <Studio />
+  <About />
+  <Contact />
+</Base>

@@ -1,0 +1,25 @@
+/* Ported from the approved concept (ermocodes-site-concepts/final/index.html, lines 12-190), static
+   parts, which are also the final reduced-motion and no-JS version; the motion layer (canvas,
+   split letters, pinned stage) is in sections/motion-*.css and only applies under html.motion.
+   The rules live in sections/*.css, imported below in the original cascade order: never reorder.
+   Each lane edits its own file; a rule moved between files changes the cascade. */
+@import './tokens.css';
+
+@import './sections/base.css';
+@import './sections/header.css';
+@import './sections/shared.css';
+@import './sections/frame.css';
+@import './sections/hero.css';
+@import './sections/what-i-do.css';
+@import './sections/experience.css';
+@import './sections/projects.css';
+@import './sections/stack.css';
+@import './sections/queue.css';
+@import './sections/studio.css';
+@import './sections/about.css';
+@import './sections/contact.css';
+@import './sections/wide.css';
+@import './sections/motion-layer.css';
+@import './sections/motion-scenes.css';
+@import './sections/draft-preview.css';
+@import './sections/reduced-motion.css';

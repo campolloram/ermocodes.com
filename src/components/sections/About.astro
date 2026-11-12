@@ -1,0 +1,23 @@
+---
+import { ABOUT, LABELS } from '../../content/site';
+import Bracket from '../chrome/Bracket.astro';
+import Label from '../chrome/Label.astro';
+import Draft from '../Draft.astro';
+---
+
+<section class="sec about" id="about" aria-labelledby="about-h">
+  <div class="sec-head">
+    <Label text={LABELS.about} />
+    <h2 class="h2" id="about-h">{ABOUT.heading}</h2>
+  </div>
+  <div class="sec-body">
+    {
+      ABOUT.lines.map((line) => (
+        <p>
+          <Draft v={line} />
+        </p>
+      ))
+    }
+    <Bracket href={ABOUT.more.href} label={ABOUT.more.label} />
+  </div>
+</section>

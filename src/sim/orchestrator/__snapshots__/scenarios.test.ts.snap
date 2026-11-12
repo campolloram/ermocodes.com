@@ -1,0 +1,162 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`determinism > double-submit log matches its snapshot byte for byte 1`] = `
+"{"t":0,"seq":0,"level":"INFO","src":"api","msg":"POST /jobs 202 job=1041 Idempotency-Key=order-7781","jobId":"1041","traceId":"ec736bfc55427ea8","narr":"sim.jobs_submitted"}
+{"t":0,"seq":1,"level":"INFO","src":"redis","msg":"LPUSH celery jobs.process[1041]","jobId":"1041","traceId":"ec736bfc55427ea8"}
+{"t":0,"seq":2,"level":"INFO","src":"w1","msg":"Task jobs.process[1041] received (try 1/5)","jobId":"1041","traceId":"ec736bfc55427ea8"}
+{"t":250,"seq":3,"level":"INFO","src":"api","msg":"POST /jobs 200 Idempotency-Key=order-7781 returned existing job=1041","jobId":"1041","traceId":"ec736bfc55427ea8","narr":"sim.api_existing_job"}
+{"t":548,"seq":4,"level":"INFO","src":"downstream","msg":"POST /v1/charges 200 job=1041 Idempotency-Key=order-7781","jobId":"1041","traceId":"ec736bfc55427ea8"}
+{"t":730,"seq":5,"level":"INFO","src":"w1","msg":"Task jobs.process[1041] succeeded in 730ms","jobId":"1041","traceId":"ec736bfc55427ea8"}"
+`;
+
+exports[`determinism > flaky-downstream log matches its snapshot byte for byte 1`] = `
+"{"t":0,"seq":0,"level":"INFO","src":"api","msg":"POST /jobs 202 job=1041 Idempotency-Key=idem-74c902f4","jobId":"1041","traceId":"b860c85209e5c36b","narr":"sim.jobs_submitted"}
+{"t":0,"seq":1,"level":"INFO","src":"redis","msg":"LPUSH celery jobs.process[1041]","jobId":"1041","traceId":"b860c85209e5c36b"}
+{"t":0,"seq":2,"level":"INFO","src":"w1","msg":"Task jobs.process[1041] received (try 1/5)","jobId":"1041","traceId":"b860c85209e5c36b"}
+{"t":35,"seq":3,"level":"INFO","src":"api","msg":"POST /jobs 202 job=1042 Idempotency-Key=idem-7c9a4f35","jobId":"1042","traceId":"c354523c7b2ea3ce","narr":"sim.jobs_submitted"}
+{"t":35,"seq":4,"level":"INFO","src":"redis","msg":"LPUSH celery jobs.process[1042]","jobId":"1042","traceId":"c354523c7b2ea3ce"}
+{"t":35,"seq":5,"level":"INFO","src":"w2","msg":"Task jobs.process[1042] received (try 1/5)","jobId":"1042","traceId":"c354523c7b2ea3ce"}
+{"t":70,"seq":6,"level":"INFO","src":"api","msg":"POST /jobs 202 job=1043 Idempotency-Key=idem-31e6080f","jobId":"1043","traceId":"4364c3478d77aac5","narr":"sim.jobs_submitted"}
+{"t":70,"seq":7,"level":"INFO","src":"redis","msg":"LPUSH celery jobs.process[1043]","jobId":"1043","traceId":"4364c3478d77aac5"}
+{"t":70,"seq":8,"level":"INFO","src":"w3","msg":"Task jobs.process[1043] received (try 1/5)","jobId":"1043","traceId":"4364c3478d77aac5"}
+{"t":105,"seq":9,"level":"INFO","src":"api","msg":"POST /jobs 202 job=1044 Idempotency-Key=idem-cb32062f","jobId":"1044","traceId":"b6bac53d7a0ad947","narr":"sim.jobs_submitted"}
+{"t":105,"seq":10,"level":"INFO","src":"redis","msg":"LPUSH celery jobs.process[1044]","jobId":"1044","traceId":"b6bac53d7a0ad947"}
+{"t":140,"seq":11,"level":"INFO","src":"api","msg":"POST /jobs 202 job=1045 Idempotency-Key=idem-b0c9f139","jobId":"1045","traceId":"e138d32352d90027","narr":"sim.jobs_submitted"}
+{"t":140,"seq":12,"level":"INFO","src":"redis","msg":"LPUSH celery jobs.process[1045]","jobId":"1045","traceId":"e138d32352d90027"}
+{"t":175,"seq":13,"level":"INFO","src":"api","msg":"POST /jobs 202 job=1046 Idempotency-Key=idem-86c405f4","jobId":"1046","traceId":"49684184ac116512","narr":"sim.jobs_submitted"}
+{"t":175,"seq":14,"level":"INFO","src":"redis","msg":"LPUSH celery jobs.process[1046]","jobId":"1046","traceId":"49684184ac116512"}
+{"t":210,"seq":15,"level":"INFO","src":"api","msg":"POST /jobs 202 job=1047 Idempotency-Key=idem-02f89b8c","jobId":"1047","traceId":"d4ec826d8a39f964","narr":"sim.jobs_submitted"}
+{"t":210,"seq":16,"level":"INFO","src":"redis","msg":"LPUSH celery jobs.process[1047]","jobId":"1047","traceId":"d4ec826d8a39f964"}
+{"t":245,"seq":17,"level":"INFO","src":"api","msg":"POST /jobs 202 job=1048 Idempotency-Key=idem-efd38dd5","jobId":"1048","traceId":"e09a4bb74f762db6","narr":"sim.jobs_submitted"}
+{"t":245,"seq":18,"level":"INFO","src":"redis","msg":"LPUSH celery jobs.process[1048]","jobId":"1048","traceId":"e09a4bb74f762db6"}
+{"t":482,"seq":19,"level":"INFO","src":"downstream","msg":"POST /v1/charges 200 job=1041 Idempotency-Key=idem-74c902f4","jobId":"1041","traceId":"b860c85209e5c36b"}
+{"t":556,"seq":20,"level":"WARN","src":"downstream","msg":"POST /v1/charges 503 Service Unavailable job=1042","jobId":"1042","traceId":"c354523c7b2ea3ce"}
+{"t":556,"seq":21,"level":"WARN","src":"w2","msg":"Task jobs.process[1042] retry in 285ms (try 2/5)","jobId":"1042","traceId":"c354523c7b2ea3ce","narr":"sim.retry_scheduled"}
+{"t":556,"seq":22,"level":"INFO","src":"w2","msg":"Task jobs.process[1044] received (try 1/5)","jobId":"1044","traceId":"b6bac53d7a0ad947"}
+{"t":556,"seq":23,"level":"WARN","src":"downstream","msg":"POST /v1/charges 503 Service Unavailable job=1043","jobId":"1043","traceId":"4364c3478d77aac5"}
+{"t":556,"seq":24,"level":"WARN","src":"w3","msg":"Task jobs.process[1043] retry in 289ms (try 2/5)","jobId":"1043","traceId":"4364c3478d77aac5","narr":"sim.retry_scheduled"}
+{"t":556,"seq":25,"level":"INFO","src":"w3","msg":"Task jobs.process[1045] received (try 1/5)","jobId":"1045","traceId":"e138d32352d90027"}
+{"t":642,"seq":26,"level":"INFO","src":"w1","msg":"Task jobs.process[1041] succeeded in 642ms","jobId":"1041","traceId":"b860c85209e5c36b"}
+{"t":642,"seq":27,"level":"INFO","src":"w1","msg":"Task jobs.process[1046] received (try 1/5)","jobId":"1046","traceId":"49684184ac116512"}
+{"t":1006,"seq":28,"level":"WARN","src":"downstream","msg":"POST /v1/charges 503 Service Unavailable job=1045","jobId":"1045","traceId":"e138d32352d90027"}
+{"t":1006,"seq":29,"level":"WARN","src":"w3","msg":"Task jobs.process[1045] retry in 345ms (try 2/5)","jobId":"1045","traceId":"e138d32352d90027","narr":"sim.retry_scheduled"}
+{"t":1006,"seq":30,"level":"INFO","src":"w3","msg":"Task jobs.process[1047] received (try 1/5)","jobId":"1047","traceId":"d4ec826d8a39f964"}
+{"t":1074,"seq":31,"level":"INFO","src":"downstream","msg":"POST /v1/charges 200 job=1044 Idempotency-Key=idem-cb32062f","jobId":"1044","traceId":"b6bac53d7a0ad947"}
+{"t":1094,"seq":32,"level":"INFO","src":"downstream","msg":"POST /v1/charges 200 job=1046 Idempotency-Key=idem-86c405f4","jobId":"1046","traceId":"49684184ac116512"}
+{"t":1244,"seq":33,"level":"INFO","src":"w1","msg":"Task jobs.process[1046] succeeded in 1069ms","jobId":"1046","traceId":"49684184ac116512"}
+{"t":1244,"seq":34,"level":"INFO","src":"w1","msg":"Task jobs.process[1048] received (try 1/5)","jobId":"1048","traceId":"e09a4bb74f762db6"}
+{"t":1246,"seq":35,"level":"INFO","src":"w2","msg":"Task jobs.process[1044] succeeded in 1141ms","jobId":"1044","traceId":"b6bac53d7a0ad947"}
+{"t":1246,"seq":36,"level":"INFO","src":"w2","msg":"Task jobs.process[1042] received (try 2/5)","jobId":"1042","traceId":"c354523c7b2ea3ce"}
+{"t":1726,"seq":37,"level":"WARN","src":"downstream","msg":"POST /v1/charges 503 Service Unavailable job=1047","jobId":"1047","traceId":"d4ec826d8a39f964"}
+{"t":1726,"seq":38,"level":"WARN","src":"w3","msg":"Task jobs.process[1047] retry in 148ms (try 2/5)","jobId":"1047","traceId":"d4ec826d8a39f964","narr":"sim.retry_scheduled"}
+{"t":1726,"seq":39,"level":"INFO","src":"w3","msg":"Task jobs.process[1043] received (try 2/5)","jobId":"1043","traceId":"4364c3478d77aac5"}
+{"t":1955,"seq":40,"level":"INFO","src":"downstream","msg":"POST /v1/charges 200 job=1048 Idempotency-Key=idem-efd38dd5","jobId":"1048","traceId":"e09a4bb74f762db6"}
+{"t":1957,"seq":41,"level":"WARN","src":"downstream","msg":"POST /v1/charges 503 Service Unavailable job=1042","jobId":"1042","traceId":"c354523c7b2ea3ce"}
+{"t":1957,"seq":42,"level":"WARN","src":"w2","msg":"Task jobs.process[1042] retry in 371ms (try 3/5)","jobId":"1042","traceId":"c354523c7b2ea3ce","narr":"sim.retry_scheduled"}
+{"t":1957,"seq":43,"level":"INFO","src":"w2","msg":"Task jobs.process[1045] received (try 2/5)","jobId":"1045","traceId":"e138d32352d90027"}
+{"t":2192,"seq":44,"level":"INFO","src":"w1","msg":"Task jobs.process[1048] succeeded in 1947ms","jobId":"1048","traceId":"e09a4bb74f762db6"}
+{"t":2192,"seq":45,"level":"INFO","src":"w1","msg":"Task jobs.process[1047] received (try 2/5)","jobId":"1047","traceId":"d4ec826d8a39f964"}
+{"t":2413,"seq":46,"level":"INFO","src":"downstream","msg":"POST /v1/charges 200 job=1043 Idempotency-Key=idem-31e6080f","jobId":"1043","traceId":"4364c3478d77aac5"}
+{"t":2629,"seq":47,"level":"INFO","src":"downstream","msg":"POST /v1/charges 200 job=1045 Idempotency-Key=idem-b0c9f139","jobId":"1045","traceId":"e138d32352d90027"}
+{"t":2641,"seq":48,"level":"INFO","src":"w3","msg":"Task jobs.process[1043] succeeded in 2571ms","jobId":"1043","traceId":"4364c3478d77aac5"}
+{"t":2641,"seq":49,"level":"INFO","src":"w3","msg":"Task jobs.process[1042] received (try 3/5)","jobId":"1042","traceId":"c354523c7b2ea3ce"}
+{"t":2852,"seq":50,"level":"INFO","src":"w2","msg":"Task jobs.process[1045] succeeded in 2712ms","jobId":"1045","traceId":"e138d32352d90027"}
+{"t":2897,"seq":51,"level":"WARN","src":"downstream","msg":"POST /v1/charges 503 Service Unavailable job=1047","jobId":"1047","traceId":"d4ec826d8a39f964"}
+{"t":2897,"seq":52,"level":"WARN","src":"w1","msg":"Task jobs.process[1047] retry in 551ms (try 3/5)","jobId":"1047","traceId":"d4ec826d8a39f964","narr":"sim.retry_scheduled"}
+{"t":3388,"seq":53,"level":"INFO","src":"downstream","msg":"POST /v1/charges 200 job=1042 Idempotency-Key=idem-7c9a4f35","jobId":"1042","traceId":"c354523c7b2ea3ce"}
+{"t":3448,"seq":54,"level":"INFO","src":"w1","msg":"Task jobs.process[1047] received (try 3/5)","jobId":"1047","traceId":"d4ec826d8a39f964"}
+{"t":3636,"seq":55,"level":"INFO","src":"w3","msg":"Task jobs.process[1042] succeeded in 3601ms","jobId":"1042","traceId":"c354523c7b2ea3ce"}
+{"t":4105,"seq":56,"level":"INFO","src":"downstream","msg":"POST /v1/charges 200 job=1047 Idempotency-Key=idem-02f89b8c","jobId":"1047","traceId":"d4ec826d8a39f964"}
+{"t":4323,"seq":57,"level":"INFO","src":"w1","msg":"Task jobs.process[1047] succeeded in 4113ms","jobId":"1047","traceId":"d4ec826d8a39f964"}"
+`;
+
+exports[`determinism > happy log matches its snapshot byte for byte 1`] = `
+"{"t":0,"seq":0,"level":"INFO","src":"api","msg":"POST /jobs 202 job=1041 Idempotency-Key=idem-8706c4eb","jobId":"1041","traceId":"a087eaf300b349c9","narr":"sim.jobs_submitted"}
+{"t":0,"seq":1,"level":"INFO","src":"redis","msg":"LPUSH celery jobs.process[1041]","jobId":"1041","traceId":"a087eaf300b349c9"}
+{"t":0,"seq":2,"level":"INFO","src":"w1","msg":"Task jobs.process[1041] received (try 1/5)","jobId":"1041","traceId":"a087eaf300b349c9"}
+{"t":35,"seq":3,"level":"INFO","src":"api","msg":"POST /jobs 202 job=1042 Idempotency-Key=idem-9ce301f0","jobId":"1042","traceId":"f7e79d2b47f66630","narr":"sim.jobs_submitted"}
+{"t":35,"seq":4,"level":"INFO","src":"redis","msg":"LPUSH celery jobs.process[1042]","jobId":"1042","traceId":"f7e79d2b47f66630"}
+{"t":35,"seq":5,"level":"INFO","src":"w2","msg":"Task jobs.process[1042] received (try 1/5)","jobId":"1042","traceId":"f7e79d2b47f66630"}
+{"t":70,"seq":6,"level":"INFO","src":"api","msg":"POST /jobs 202 job=1043 Idempotency-Key=idem-748ca60a","jobId":"1043","traceId":"6d010770feacb771","narr":"sim.jobs_submitted"}
+{"t":70,"seq":7,"level":"INFO","src":"redis","msg":"LPUSH celery jobs.process[1043]","jobId":"1043","traceId":"6d010770feacb771"}
+{"t":70,"seq":8,"level":"INFO","src":"w3","msg":"Task jobs.process[1043] received (try 1/5)","jobId":"1043","traceId":"6d010770feacb771"}
+{"t":105,"seq":9,"level":"INFO","src":"api","msg":"POST /jobs 202 job=1044 Idempotency-Key=idem-3f5db9e0","jobId":"1044","traceId":"239126bd675bd122","narr":"sim.jobs_submitted"}
+{"t":105,"seq":10,"level":"INFO","src":"redis","msg":"LPUSH celery jobs.process[1044]","jobId":"1044","traceId":"239126bd675bd122"}
+{"t":140,"seq":11,"level":"INFO","src":"api","msg":"POST /jobs 202 job=1045 Idempotency-Key=idem-113f2716","jobId":"1045","traceId":"278cdcb27d3888ca","narr":"sim.jobs_submitted"}
+{"t":140,"seq":12,"level":"INFO","src":"redis","msg":"LPUSH celery jobs.process[1045]","jobId":"1045","traceId":"278cdcb27d3888ca"}
+{"t":175,"seq":13,"level":"INFO","src":"api","msg":"POST /jobs 202 job=1046 Idempotency-Key=idem-492e3b0b","jobId":"1046","traceId":"6505c581c461310c","narr":"sim.jobs_submitted"}
+{"t":175,"seq":14,"level":"INFO","src":"redis","msg":"LPUSH celery jobs.process[1046]","jobId":"1046","traceId":"6505c581c461310c"}
+{"t":210,"seq":15,"level":"INFO","src":"api","msg":"POST /jobs 202 job=1047 Idempotency-Key=idem-6d68e763","jobId":"1047","traceId":"30dd17410af05593","narr":"sim.jobs_submitted"}
+{"t":210,"seq":16,"level":"INFO","src":"redis","msg":"LPUSH celery jobs.process[1047]","jobId":"1047","traceId":"30dd17410af05593"}
+{"t":245,"seq":17,"level":"INFO","src":"api","msg":"POST /jobs 202 job=1048 Idempotency-Key=idem-4b7c9784","jobId":"1048","traceId":"97234e9dcc76919a","narr":"sim.jobs_submitted"}
+{"t":245,"seq":18,"level":"INFO","src":"redis","msg":"LPUSH celery jobs.process[1048]","jobId":"1048","traceId":"97234e9dcc76919a"}
+{"t":280,"seq":19,"level":"INFO","src":"api","msg":"POST /jobs 202 job=1049 Idempotency-Key=idem-8bcc0dbc","jobId":"1049","traceId":"3499aafea87b2f34","narr":"sim.jobs_submitted"}
+{"t":280,"seq":20,"level":"INFO","src":"redis","msg":"LPUSH celery jobs.process[1049]","jobId":"1049","traceId":"3499aafea87b2f34"}
+{"t":315,"seq":21,"level":"INFO","src":"api","msg":"POST /jobs 202 job=1050 Idempotency-Key=idem-b89007d2","jobId":"1050","traceId":"c2294f5c315c42a6","narr":"sim.jobs_submitted"}
+{"t":315,"seq":22,"level":"INFO","src":"redis","msg":"LPUSH celery jobs.process[1050]","jobId":"1050","traceId":"c2294f5c315c42a6"}
+{"t":738,"seq":23,"level":"INFO","src":"downstream","msg":"POST /v1/charges 200 job=1043 Idempotency-Key=idem-748ca60a","jobId":"1043","traceId":"6d010770feacb771"}
+{"t":808,"seq":24,"level":"INFO","src":"downstream","msg":"POST /v1/charges 200 job=1042 Idempotency-Key=idem-9ce301f0","jobId":"1042","traceId":"f7e79d2b47f66630"}
+{"t":891,"seq":25,"level":"INFO","src":"downstream","msg":"POST /v1/charges 200 job=1041 Idempotency-Key=idem-8706c4eb","jobId":"1041","traceId":"a087eaf300b349c9"}
+{"t":960,"seq":26,"level":"INFO","src":"w3","msg":"Task jobs.process[1043] succeeded in 890ms","jobId":"1043","traceId":"6d010770feacb771"}
+{"t":960,"seq":27,"level":"INFO","src":"w3","msg":"Task jobs.process[1044] received (try 1/5)","jobId":"1044","traceId":"239126bd675bd122"}
+{"t":1065,"seq":28,"level":"INFO","src":"w2","msg":"Task jobs.process[1042] succeeded in 1030ms","jobId":"1042","traceId":"f7e79d2b47f66630"}
+{"t":1065,"seq":29,"level":"INFO","src":"w2","msg":"Task jobs.process[1045] received (try 1/5)","jobId":"1045","traceId":"278cdcb27d3888ca"}
+{"t":1187,"seq":30,"level":"INFO","src":"w1","msg":"Task jobs.process[1041] succeeded in 1187ms","jobId":"1041","traceId":"a087eaf300b349c9"}
+{"t":1187,"seq":31,"level":"INFO","src":"w1","msg":"Task jobs.process[1046] received (try 1/5)","jobId":"1046","traceId":"6505c581c461310c"}
+{"t":1516,"seq":32,"level":"INFO","src":"downstream","msg":"POST /v1/charges 200 job=1044 Idempotency-Key=idem-3f5db9e0","jobId":"1044","traceId":"239126bd675bd122"}
+{"t":1701,"seq":33,"level":"INFO","src":"w3","msg":"Task jobs.process[1044] succeeded in 1596ms","jobId":"1044","traceId":"239126bd675bd122"}
+{"t":1701,"seq":34,"level":"INFO","src":"w3","msg":"Task jobs.process[1047] received (try 1/5)","jobId":"1047","traceId":"30dd17410af05593"}
+{"t":1704,"seq":35,"level":"INFO","src":"downstream","msg":"POST /v1/charges 200 job=1046 Idempotency-Key=idem-492e3b0b","jobId":"1046","traceId":"6505c581c461310c"}
+{"t":1854,"seq":36,"level":"INFO","src":"downstream","msg":"POST /v1/charges 200 job=1045 Idempotency-Key=idem-113f2716","jobId":"1045","traceId":"278cdcb27d3888ca"}
+{"t":1876,"seq":37,"level":"INFO","src":"w1","msg":"Task jobs.process[1046] succeeded in 1701ms","jobId":"1046","traceId":"6505c581c461310c"}
+{"t":1876,"seq":38,"level":"INFO","src":"w1","msg":"Task jobs.process[1048] received (try 1/5)","jobId":"1048","traceId":"97234e9dcc76919a"}
+{"t":2117,"seq":39,"level":"INFO","src":"w2","msg":"Task jobs.process[1045] succeeded in 1977ms","jobId":"1045","traceId":"278cdcb27d3888ca"}
+{"t":2117,"seq":40,"level":"INFO","src":"w2","msg":"Task jobs.process[1049] received (try 1/5)","jobId":"1049","traceId":"3499aafea87b2f34"}
+{"t":2335,"seq":41,"level":"INFO","src":"downstream","msg":"POST /v1/charges 200 job=1047 Idempotency-Key=idem-6d68e763","jobId":"1047","traceId":"30dd17410af05593"}
+{"t":2546,"seq":42,"level":"INFO","src":"w3","msg":"Task jobs.process[1047] succeeded in 2336ms","jobId":"1047","traceId":"30dd17410af05593"}
+{"t":2546,"seq":43,"level":"INFO","src":"w3","msg":"Task jobs.process[1050] received (try 1/5)","jobId":"1050","traceId":"c2294f5c315c42a6"}
+{"t":2651,"seq":44,"level":"INFO","src":"downstream","msg":"POST /v1/charges 200 job=1048 Idempotency-Key=idem-4b7c9784","jobId":"1048","traceId":"97234e9dcc76919a"}
+{"t":2825,"seq":45,"level":"INFO","src":"downstream","msg":"POST /v1/charges 200 job=1049 Idempotency-Key=idem-8bcc0dbc","jobId":"1049","traceId":"3499aafea87b2f34"}
+{"t":2909,"seq":46,"level":"INFO","src":"w1","msg":"Task jobs.process[1048] succeeded in 2664ms","jobId":"1048","traceId":"97234e9dcc76919a"}
+{"t":3060,"seq":47,"level":"INFO","src":"w2","msg":"Task jobs.process[1049] succeeded in 2780ms","jobId":"1049","traceId":"3499aafea87b2f34"}
+{"t":3113,"seq":48,"level":"INFO","src":"downstream","msg":"POST /v1/charges 200 job=1050 Idempotency-Key=idem-b89007d2","jobId":"1050","traceId":"c2294f5c315c42a6"}
+{"t":3301,"seq":49,"level":"INFO","src":"w3","msg":"Task jobs.process[1050] succeeded in 2986ms","jobId":"1050","traceId":"c2294f5c315c42a6"}"
+`;
+
+exports[`determinism > kill-worker log matches its snapshot byte for byte 1`] = `
+"{"t":0,"seq":0,"level":"INFO","src":"api","msg":"POST /jobs 202 job=1041 Idempotency-Key=idem-4909298b","jobId":"1041","traceId":"bbf7deb1533318e6","narr":"sim.jobs_submitted"}
+{"t":0,"seq":1,"level":"INFO","src":"redis","msg":"LPUSH celery jobs.process[1041]","jobId":"1041","traceId":"bbf7deb1533318e6"}
+{"t":0,"seq":2,"level":"INFO","src":"w1","msg":"Task jobs.process[1041] received (try 1/5)","jobId":"1041","traceId":"bbf7deb1533318e6"}
+{"t":35,"seq":3,"level":"INFO","src":"api","msg":"POST /jobs 202 job=1042 Idempotency-Key=idem-7fcbaca1","jobId":"1042","traceId":"e012def3a17e4b3d","narr":"sim.jobs_submitted"}
+{"t":35,"seq":4,"level":"INFO","src":"redis","msg":"LPUSH celery jobs.process[1042]","jobId":"1042","traceId":"e012def3a17e4b3d"}
+{"t":35,"seq":5,"level":"INFO","src":"w2","msg":"Task jobs.process[1042] received (try 1/5)","jobId":"1042","traceId":"e012def3a17e4b3d"}
+{"t":70,"seq":6,"level":"INFO","src":"api","msg":"POST /jobs 202 job=1043 Idempotency-Key=idem-c92e943b","jobId":"1043","traceId":"c81635e51d312edc","narr":"sim.jobs_submitted"}
+{"t":70,"seq":7,"level":"INFO","src":"redis","msg":"LPUSH celery jobs.process[1043]","jobId":"1043","traceId":"c81635e51d312edc"}
+{"t":70,"seq":8,"level":"INFO","src":"w3","msg":"Task jobs.process[1043] received (try 1/5)","jobId":"1043","traceId":"c81635e51d312edc"}
+{"t":105,"seq":9,"level":"INFO","src":"api","msg":"POST /jobs 202 job=1044 Idempotency-Key=idem-94d16a13","jobId":"1044","traceId":"6c9a0da7d5c26489","narr":"sim.jobs_submitted"}
+{"t":105,"seq":10,"level":"INFO","src":"redis","msg":"LPUSH celery jobs.process[1044]","jobId":"1044","traceId":"6c9a0da7d5c26489"}
+{"t":140,"seq":11,"level":"INFO","src":"api","msg":"POST /jobs 202 job=1045 Idempotency-Key=idem-5ddff010","jobId":"1045","traceId":"241903d8ac17156c","narr":"sim.jobs_submitted"}
+{"t":140,"seq":12,"level":"INFO","src":"redis","msg":"LPUSH celery jobs.process[1045]","jobId":"1045","traceId":"241903d8ac17156c"}
+{"t":175,"seq":13,"level":"INFO","src":"api","msg":"POST /jobs 202 job=1046 Idempotency-Key=idem-ea4a66f2","jobId":"1046","traceId":"f8bba8b00a0915cb","narr":"sim.jobs_submitted"}
+{"t":175,"seq":14,"level":"INFO","src":"redis","msg":"LPUSH celery jobs.process[1046]","jobId":"1046","traceId":"f8bba8b00a0915cb"}
+{"t":610,"seq":15,"level":"INFO","src":"downstream","msg":"POST /v1/charges 200 job=1043 Idempotency-Key=idem-c92e943b","jobId":"1043","traceId":"c81635e51d312edc"}
+{"t":645,"seq":16,"level":"INFO","src":"downstream","msg":"POST /v1/charges 200 job=1042 Idempotency-Key=idem-7fcbaca1","jobId":"1042","traceId":"e012def3a17e4b3d"}
+{"t":645,"seq":17,"level":"ERROR","src":"w2","msg":"celery@w2 lost (host down)","jobId":"1042","traceId":"e012def3a17e4b3d","narr":"sim.worker_killed"}
+{"t":690,"seq":18,"level":"INFO","src":"downstream","msg":"POST /v1/charges 200 job=1041 Idempotency-Key=idem-4909298b","jobId":"1041","traceId":"bbf7deb1533318e6"}
+{"t":790,"seq":19,"level":"INFO","src":"w3","msg":"Task jobs.process[1043] succeeded in 720ms","jobId":"1043","traceId":"c81635e51d312edc"}
+{"t":790,"seq":20,"level":"INFO","src":"w3","msg":"Task jobs.process[1044] received (try 1/5)","jobId":"1044","traceId":"6c9a0da7d5c26489"}
+{"t":920,"seq":21,"level":"INFO","src":"w1","msg":"Task jobs.process[1041] succeeded in 920ms","jobId":"1041","traceId":"bbf7deb1533318e6"}
+{"t":920,"seq":22,"level":"INFO","src":"w1","msg":"Task jobs.process[1045] received (try 1/5)","jobId":"1045","traceId":"241903d8ac17156c"}
+{"t":1242,"seq":23,"level":"INFO","src":"downstream","msg":"POST /v1/charges 200 job=1044 Idempotency-Key=idem-94d16a13","jobId":"1044","traceId":"6c9a0da7d5c26489"}
+{"t":1392,"seq":24,"level":"INFO","src":"w3","msg":"Task jobs.process[1044] succeeded in 1287ms","jobId":"1044","traceId":"6c9a0da7d5c26489"}
+{"t":1392,"seq":25,"level":"INFO","src":"w3","msg":"Task jobs.process[1046] received (try 1/5)","jobId":"1046","traceId":"f8bba8b00a0915cb"}
+{"t":1792,"seq":26,"level":"INFO","src":"downstream","msg":"POST /v1/charges 200 job=1045 Idempotency-Key=idem-5ddff010","jobId":"1045","traceId":"241903d8ac17156c"}
+{"t":2082,"seq":27,"level":"INFO","src":"w1","msg":"Task jobs.process[1045] succeeded in 1942ms","jobId":"1045","traceId":"241903d8ac17156c"}
+{"t":2127,"seq":28,"level":"INFO","src":"downstream","msg":"POST /v1/charges 200 job=1046 Idempotency-Key=idem-ea4a66f2","jobId":"1046","traceId":"f8bba8b00a0915cb"}
+{"t":2372,"seq":29,"level":"INFO","src":"w3","msg":"Task jobs.process[1046] succeeded in 2197ms","jobId":"1046","traceId":"f8bba8b00a0915cb"}
+{"t":2745,"seq":30,"level":"INFO","src":"w2","msg":"celery@w2 ready","narr":"sim.worker_ready"}
+{"t":3035,"seq":31,"level":"WARN","src":"redis","msg":"redelivering job 1042 (attempt 2)","jobId":"1042","traceId":"e012def3a17e4b3d","narr":"sim.redelivered"}
+{"t":3035,"seq":32,"level":"INFO","src":"w1","msg":"Task jobs.process[1042] received again (redelivered, attempt 2)","jobId":"1042","traceId":"e012def3a17e4b3d"}
+{"t":3475,"seq":33,"level":"INFO","src":"downstream","msg":"POST /v1/charges 200 job=1042 Idempotency-Key=idem-7fcbaca1 (replayed, no new charge)","jobId":"1042","traceId":"e012def3a17e4b3d","narr":"sim.idempotent_skip"}
+{"t":3695,"seq":34,"level":"INFO","src":"w1","msg":"Task jobs.process[1042] succeeded in 3660ms","jobId":"1042","traceId":"e012def3a17e4b3d"}"
+`;

@@ -1,0 +1,182 @@
+name: Deploy
+
+# Called by ci.yml after every CI job passes.
+#   pull_request: upload a preview version with alias pr-<n> and comment its URL.
+# Run by hand (workflow_dispatch, "Run workflow" on main), never on push:
+#   target=bootstrap: creates the Worker and enables preview URLs without attaching the apex.
+#   target=production: production build (no test hooks) and wrangler deploy, behind the
+#     `production` GitHub environment (add required reviewers in Settings > Environments).
+# Until CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID are set, the jobs skip cleanly.
+on:
+  workflow_call:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: Which job to run
+        type: choice
+        options: [bootstrap, production]
+        default: bootstrap
+
+permissions:
+  contents: read
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    outputs:
+      enabled: ${{ steps.secrets.outputs.enabled }}
+    steps:
+      - id: secrets
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if [ -n "$CLOUDFLARE_API_TOKEN" ] && [ -n "$CLOUDFLARE_ACCOUNT_ID" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            if [ "$GITHUB_EVENT_NAME" = workflow_dispatch ]; then
+              echo "::error title=Bootstrap blocked::Set CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID first."
+              exit 1
+            fi
+            echo "::notice title=Deploy skipped::Cloudflare secrets are not set; skipping deploy."
+          fi
+
+  bootstrap:
+    needs: gate
+    if: >-
+      needs.gate.outputs.enabled == 'true' &&
+      github.event_name == 'workflow_dispatch' && inputs.target == 'bootstrap'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    concurrency:
+      group: deploy-production
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      # cf:bootstrap runs the guard, which needs pdftotext to read the shipped PDFs.
+      - name: Install pdftotext
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq poppler-utils
+      - run: npm ci
+      - id: worker
+        name: Check whether the Worker exists
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          exists=$(npm run --silent cf:worker-exists)
+          echo "exists=$exists" >> "$GITHUB_OUTPUT"
+      - if: steps.worker.outputs.exists == 'true'
+        run: echo "::notice title=Bootstrap skipped::Worker already exists; nothing to do."
+      # cf:bootstrap re-checks and refuses if the Worker exists, then builds without test hooks,
+      # guards with main rules and deploys wrangler.bootstrap.jsonc. Secrets reach only the
+      # check and the deploy inside the script.
+      - if: steps.worker.outputs.exists == 'false'
+        name: Create Worker with preview URLs and no routes
+        env:
+          BLOCKED_NAMES: ${{ secrets.BLOCKED_NAMES }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npm run cf:bootstrap -- --message "bootstrap ${GITHUB_SHA::7}"
+
+  preview:
+    needs: gate
+    if: needs.gate.outputs.enabled == 'true' && github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pull-requests: write
+    concurrency:
+      group: preview-${{ github.event.pull_request.number }}
+      cancel-in-progress: true
+    env:
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      # The noindex build (PUBLIC_SITE_ENV=preview) from ci.yml, deployed from ./dist.
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: dist-preview
+          path: dist
+      - name: Check the Worker exists
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          exists=$(npm run --silent cf:worker-exists)
+          if [ "$exists" != true ]; then
+            echo "::error title=Worker missing::Run the one-time bootstrap: the Deploy workflow's bootstrap job (gh workflow run deploy.yml) or locally npm run cf:bootstrap (scripts/cf-bootstrap.mjs)."
+            exit 1
+          fi
+      - name: Mark preview noindex
+        run: |
+          printf '\n/*\n  X-Robots-Tag: noindex, nofollow\n' >> dist/_headers
+      - id: upload
+        name: Upload preview version
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -o pipefail
+          npx wrangler versions upload --preview-alias "pr-${PR_NUMBER}" \
+            --message "PR #${PR_NUMBER} ${GITHUB_SHA::7}" 2>&1 | tee wrangler.log
+          url=$(grep -Eo "https://pr-${PR_NUMBER}-[A-Za-z0-9.-]+\.workers\.dev" wrangler.log | head -n 1)
+          if [ -z "$url" ]; then echo "::error::No preview URL in wrangler output"; exit 1; fi
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+      - name: Comment preview URL
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PREVIEW_URL: ${{ steps.upload.outputs.url }}
+        run: |
+          gh pr comment "$PR_NUMBER" --edit-last --create-if-none \
+            --body "Preview for ${GITHUB_SHA::7}: $PREVIEW_URL (noindex)"
+
+  production:
+    needs: gate
+    if: >-
+      needs.gate.outputs.enabled == 'true' &&
+      github.event_name == 'workflow_dispatch' && inputs.target == 'production' &&
+      github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 10
+    concurrency:
+      group: deploy-production
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      # The guard reads shipped PDFs' text with pdftotext (required: the guard fails without it).
+      - name: Install pdftotext
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq poppler-utils
+      - run: npm ci
+      # Public IDs come from repo variables (gh variable set PUBLIC_CF_BEACON_TOKEN ...); unset
+      # ones stay off. They are public IDs, not secrets.
+      - name: Production build (no test hooks)
+        env:
+          PUBLIC_CF_BEACON_TOKEN: ${{ vars.PUBLIC_CF_BEACON_TOKEN }}
+          PUBLIC_CAL_LINK: ${{ vars.PUBLIC_CAL_LINK }}
+        run: npm run build
+      - name: Content guard (main rules)
+        env:
+          BLOCKED_NAMES: ${{ secrets.BLOCKED_NAMES }}
+        run: npm run guard -- --main
+      - name: Deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx wrangler deploy --message "main ${GITHUB_SHA::7}"

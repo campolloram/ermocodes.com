@@ -1,0 +1,89 @@
+---
+// The queue demo. The markup is a build-time still frame of the sim engine's kill-worker scenario
+// (src/sim/orchestrator): it is also the final version for reduced motion and no JS. When JS runs,
+// src/demo/queue-demo.ts (lazy-loaded near the viewport) takes the section over: a ready state
+// (counters at 0, idle lanes, a ready line), then the same scenario live. The control and its
+// result sit above the lanes and the log, so a press and its outcome are on screen together; the
+// log and the result line each share a grid cell with hidden sizers (the end-of-run log, every
+// result text), so the demo never changes height while it runs: nothing below it moves and the page never
+// scrolls under the reader. data-canvas="off" pauses the WebGL scene while this section fills the view.
+import { textOf } from '../../content/draft';
+import { LABELS, QUEUE } from '../../content/site';
+import { SCENARIOS, runScenario } from '../../sim/orchestrator/scenarios';
+import Label from '../chrome/Label.astro';
+import Draft from '../Draft.astro';
+import { LOG_ROWS, fillOutcome, seconds, shownMetrics, trimLog } from '../../demo/queue-demo-model';
+
+const run = runScenario(SCENARIOS['kill-worker']);
+const lines = trimLog(run.sim.log, LOG_ROWS);
+const m = shownMetrics(run.sim.metrics);
+const filled = fillOutcome(textOf(QUEUE.outcome), run.sim.metrics, 'w2');
+---
+
+<section class="sec" id="queue" aria-labelledby="queue-h" data-canvas="off">
+  <div class="sec-head">
+    <Label text={LABELS.queue} />
+    <h2 class="h2" id="queue-h">{QUEUE.heading}</h2>
+  </div>
+  <p class="queue-intro"><Draft v={QUEUE.intro} /></p>
+  <div class="demo" data-demo data-state="still">
+    <div class="demo-ctl">
+      <button class="bracket" type="button" data-kill hidden>
+        <span class="b" aria-hidden="true">[</span><span class="t">{QUEUE.button}</span><span
+          class="b"
+          aria-hidden="true">]</span
+        >
+      </button>
+      <div class="layer">
+        <p class="outcome" role="status" aria-live="polite" data-outcome></p>
+        {
+          /* The still frame's result (no JS), the ready line, and the running line as a sizer: one
+            grid cell, so the line never changes height whatever it says. */
+        }
+        <p class="outcome o-still"><Draft v={filled} /></p>
+        <p class="outcome o-ready"><Draft v={QUEUE.readyLine} /></p>
+        <p class="outcome o-run" aria-hidden="true">{QUEUE.runningLine}</p>
+      </div>
+    </div>
+    <canvas class="lanes" data-lanes aria-hidden="true"></canvas>
+    <p class="still-status" role="group" aria-label="Counts">
+      <span>submitted <b data-m="submitted">{m.submitted}</b></span>
+      <span>succeeded <b data-m="succeeded">{m.succeeded}</b></span>
+      <span>retries <b data-m="retries">{m.retries}</b></span>
+      <span>lost <b data-m="lost">{m.lost}</b></span>
+    </p>
+    <div class="layer">
+      <ol class="log" aria-label="Worker log" data-log>
+        {
+          lines.map((l) => (
+            <li class={`lv-${l.level}`}>
+              <time>{seconds(l.t)}</time>
+              <span class="lvl">{l.level}</span>
+              <span>
+                {l.src} {l.msg}
+              </span>
+            </li>
+          ))
+        }
+      </ol>
+      <ol class="log-sz" aria-hidden="true">
+        {
+          lines.map((l) => (
+            <li class={`lv-${l.level}`}>
+              <time>{seconds(l.t)}</time>
+              <span class="lvl">{l.level}</span>
+              <span>
+                {l.src} {l.msg}
+              </span>
+            </li>
+          ))
+        }
+      </ol>
+    </div>
+    <p class="queue-note">{QUEUE.stillCaption}. <Draft v={QUEUE.note} /></p>
+  </div>
+  <template data-demo-copy>
+    <span data-k="running">{QUEUE.runningLine}</span>
+    <span data-k="outcome"><Draft v={QUEUE.outcome} /></span>
+  </template>
+</section>

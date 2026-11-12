@@ -1,0 +1,22 @@
+---
+// Renders a line of site.ts copy. Drafts carry data-draft; preview builds (data-env on <html>)
+// underline them and add a "draft" tag, and expose the source in data-src.
+import { isDraft, type Copy } from '../content/draft';
+import { SITE_ENV } from '../seo/site-env';
+
+interface Props {
+  v: Copy;
+}
+const { v } = Astro.props;
+const draft = isDraft(v) ? v : undefined;
+---
+
+{
+  draft ? (
+    <span data-draft data-src={SITE_ENV === 'preview' ? draft.src : undefined}>
+      {draft.text}
+    </span>
+  ) : (
+    v
+  )
+}

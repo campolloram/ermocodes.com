@@ -1,0 +1,17 @@
+/* ---------- preview builds mark unconfirmed copy ---------- */
+html[data-env='preview'] [data-draft] {
+  text-decoration: underline dotted var(--sig);
+  text-underline-offset: 4px;
+}
+html[data-env='preview'] [data-draft]::after {
+  content: 'draft';
+  margin-left: 0.6ch;
+  padding: 0 4px;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  color: var(--ink);
+  background: var(--sig);
+  text-decoration: none;
+  display: inline-block;
+  vertical-align: 0.15em;
+}

@@ -1,0 +1,27 @@
+/* ---------- 05 stack ---------- */
+.stack {
+  display: grid;
+  gap: 0;
+}
+.stack-row {
+  display: grid;
+  gap: 4px;
+  padding: 14px 0;
+  border-top: 1px solid var(--rule);
+}
+.stack-row:last-child {
+  border-bottom: 1px solid var(--rule);
+}
+.stack-row {
+  text-shadow: var(--halo);
+}
+.stack dt {
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: var(--mute);
+}
+.stack dd {
+  text-shadow: var(--halo);
+  font-size: 15px;
+  color: var(--paper);
+}

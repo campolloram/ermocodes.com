@@ -1,0 +1,58 @@
+---
+// Document shell: <Seo>, the Departure Mono font, the skip link and the Cloudflare Web Analytics
+// slot (production builds only, behind PUBLIC_CF_BEACON_TOKEN; cookieless, so no banner).
+import { Font } from 'astro:assets';
+import Seo from '../components/Seo.astro';
+import { HEAD_SCRIPT } from '../motion/head-script.mjs';
+import { SITE_ENV } from '../seo/site-env';
+import '../styles/global.css';
+
+interface Props {
+  title: string;
+  description: string;
+  path?: string;
+  noindex?: boolean;
+}
+
+const { title, description, path, noindex = false } = Astro.props;
+const beaconToken = import.meta.env.PUBLIC_CF_BEACON_TOKEN;
+const beacon =
+  SITE_ENV === 'production' &&
+  typeof beaconToken === 'string' &&
+  /^[a-f0-9]{16,64}$/i.test(beaconToken)
+    ? JSON.stringify({ token: beaconToken })
+    : undefined;
+---
+
+<!doctype html>
+<html lang="en" data-env={SITE_ENV}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#131413" />
+    <script is:inline set:html={HEAD_SCRIPT} />
+    <Seo title={title} description={description} path={path} noindex={noindex} />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <Font cssVariable="--font-departure" preload={[{ weight: '400', style: 'normal' }]} />
+  </head>
+  <body>
+    <a class="skip" href="#main">Skip to content</a>
+    <slot name="top" />
+    <main id="main" tabindex="-1">
+      <slot />
+    </main>
+    <script>
+      import '../motion/boot.ts';
+    </script>
+    {
+      beacon && (
+        <script
+          is:inline
+          defer
+          src="https://static.cloudflareinsights.com/beacon.min.js"
+          data-cf-beacon={beacon}
+        />
+      )
+    }
+  </body>
+</html>

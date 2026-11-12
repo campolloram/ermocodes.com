@@ -1,0 +1,73 @@
+/* ---------- 07 work with me ---------- */
+.studio-intro {
+  font-size: 16px;
+  line-height: 1.6;
+  max-width: 48ch;
+  color: var(--paper);
+  margin-bottom: 20px;
+}
+.offers li {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px 16px;
+  padding: 18px 0;
+  border-top: 1px solid var(--rule);
+}
+.offers li:last-child {
+  border-bottom: 1px solid var(--rule);
+}
+.offer-name {
+  font-size: 17px;
+  color: var(--hd);
+}
+.offer-time {
+  font-size: 13px;
+  color: var(--acc);
+  white-space: nowrap;
+}
+.offer-line {
+  grid-column: 1 / -1;
+  font-size: 15px;
+  line-height: 1.5;
+  max-width: 52ch;
+  color: var(--paper);
+}
+.how-h {
+  margin: 32px 0 6px;
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  font-weight: 400;
+  color: var(--mute);
+}
+.how {
+  list-style: none;
+  counter-reset: step;
+}
+.how li {
+  counter-increment: step;
+  display: grid;
+  grid-template-columns: 2.4ch 1fr;
+  padding: 10px 0;
+  font-size: 15px;
+  line-height: 1.5;
+  max-width: 56ch;
+  color: var(--paper);
+}
+.how li::before {
+  content: counter(step) '.';
+  color: var(--acc);
+}
+.studio-cta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 18px;
+  margin-top: 20px;
+}
+.studio-cta .bracket {
+  font-size: 19px;
+}
+.studio-cta .or {
+  font-size: 13px;
+  color: var(--mute);
+}

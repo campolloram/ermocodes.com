@@ -1,0 +1,210 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # Secrets are not given to fork PRs: the guard then skips the name rules with a warning.
+    env:
+      BLOCKED_NAMES: ${{ secrets.BLOCKED_NAMES }}
+      GUARD_SKIP_BLOCKED_NAMES: ${{ github.event.pull_request.head.repo.fork && '1' || '' }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      # scripts/guard-content.test.mjs reads a PDF's text with pdftotext (the guard fails without it).
+      - name: Install pdftotext
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq poppler-utils
+      - run: npm ci
+      - run: npm run check
+      - run: npm run lint
+      - run: npm run format:check
+      - run: npm run test:coverage
+
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # Secrets are not given to fork PRs: the guard then skips the name rules with a warning.
+    env:
+      BLOCKED_NAMES: ${{ secrets.BLOCKED_NAMES }}
+      GUARD_SKIP_BLOCKED_NAMES: ${{ github.event.pull_request.head.repo.fork && '1' || '' }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      # The guard reads shipped PDFs' text with pdftotext (required: the guard fails without it).
+      - name: Install pdftotext
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq poppler-utils
+      - run: npm ci
+      # Only this build carries the e2e test hooks (window.__ecMotion, __ecSim); the preview build
+      # below, which gets deployed to a public URL, never does.
+      - run: npm run build
+        env:
+          PUBLIC_TEST_HOOKS: '1'
+          PUBLIC_CAL_LINK: ${{ vars.PUBLIC_CAL_LINK }}
+      - name: Content guard
+        # This build has PUBLIC_TEST_HOOKS=1 for e2e; deploy.yml guards the hook-free production build.
+        run: npm run guard -- ${{ github.ref == 'refs/heads/main' && '--main --allow-test-hooks' || '' }}
+      # The WebGL page's script budget (220 KB gzip): Lighthouse here has no GPU and never loads it.
+      - name: Bundle size
+        run: npm run check:bundle
+      # All copy is approved (2026-11-09): fails while any draft() line is added back; the
+      # production guard (--main) also fails on any data-draft.
+      - name: Drafts
+        run: npm run check:drafts
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: dist
+          path: dist
+          retention-days: 7
+          if-no-files-found: error
+      # PR previews deploy this second build: PUBLIC_SITE_ENV=preview makes every page noindex.
+      - name: Preview build (noindex)
+        if: github.event_name == 'pull_request'
+        env:
+          PUBLIC_SITE_ENV: preview
+          PUBLIC_TEST_HOOKS: ''
+          PUBLIC_CAL_LINK: ${{ vars.PUBLIC_CAL_LINK }}
+        run: |
+          npx astro build --outDir dist-preview
+          node scripts/check-noindex.mjs dist-preview
+          node scripts/guard-content.mjs dist-preview --no-test-hooks
+      - if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: dist-preview
+          path: dist-preview
+          retention-days: 7
+          if-no-files-found: error
+
+  # One shard per Playwright project (same projects and browsers as before; chromium-perf runs
+  # alone with --no-deps, as its dependencies are the other shards).
+  e2e-shard:
+    name: e2e-shard (${{ matrix.project }})
+    needs: build
+    runs-on: ubuntu-latest
+    # ~12 min of tests plus 6-18 min of `playwright install-deps` on a slow runner: 35 min keeps the
+    # shard from being cancelled during setup (the browsers themselves are cached below).
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      matrix:
+        project:
+          - chromium-desktop
+          - chromium-mobile
+          - firefox-desktop
+          - firefox-mobile
+          - chromium-reduced
+          - chromium-perf
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: dist
+          path: dist
+      - id: pw-cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-chromium-firefox-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+      - if: steps.pw-cache.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps chromium firefox
+      - if: steps.pw-cache.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium firefox
+      - run: npm run test:e2e -- --project=${{ matrix.project }} --no-deps --global-timeout=2040000
+        env:
+          # Same value as the build job's: the specs expect the book link exactly when it is set.
+          PUBLIC_CAL_LINK: ${{ vars.PUBLIC_CAL_LINK }}
+      - if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: playwright-report-${{ matrix.project }}
+          path: playwright-report
+          retention-days: 7
+
+  # Stable required-check name: passes only when every shard passed.
+  e2e:
+    if: always()
+    needs: e2e-shard
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - run: test "${{ needs.e2e-shard.result }}" = "success"
+
+  lighthouse:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      # Lighthouse measures what visitors get: its own production build, without the test hooks
+      # (the build job's dist has PUBLIC_TEST_HOOKS=1, which also lets software WebGL run).
+      - run: npm run build
+        env:
+          PUBLIC_CAL_LINK: ${{ vars.PUBLIC_CAL_LINK }}
+      - run: npm run lhci
+      - if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: lighthouse
+          path: .lighthouseci
+          include-hidden-files: true
+          retention-days: 14
+
+  links:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: dist
+          path: dist
+      # One page: the in-page anchors (#experience, #contact, ...) are checked offline.
+      - uses: lycheeverse/lychee-action@e7477775783ea5526144ba13e8db5eec57747ce8 # v2.9.0
+        with:
+          args: >-
+            --offline --no-progress --include-fragments
+            --fallback-extensions html
+            --index-files index.html
+            --root-dir ${{ github.workspace }}/dist
+            'dist/**/*.html'
+          fail: true
+
+  # Runs only after every check passes, so a red build never deploys.
+  deploy:
+    # Previews only. Production deploys by hand: Actions > Deploy > Run workflow (target=production).
+    if: github.event_name == 'pull_request'
+    needs: [check, build, e2e, lighthouse, links]
+    permissions:
+      contents: read
+      pull-requests: write
+    uses: ./.github/workflows/deploy.yml
+    secrets: inherit

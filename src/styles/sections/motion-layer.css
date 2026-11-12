@@ -1,0 +1,113 @@
+/* ---------- motion layer: only under html.motion, or for the static canvas ---------- */
+#ascii {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 100vw;
+  height: 100lvh;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+#ascii.on {
+  opacity: 1;
+}
+/* Reduced motion (and before the pinned layout): the figure is drawn once behind the hero. */
+html:not(.motion) #ascii {
+  position: absolute;
+  height: 100svh;
+  min-height: 600px;
+}
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+.cl {
+  position: absolute;
+  left: 0;
+  top: 0;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  opacity: 0;
+  color: var(--mute);
+  transform: translate(-50%, 0);
+}
+/* The group chips are captions for the two clusters, not controls: plain text behind a small
+   square key in the group colour (no box, so they never read as buttons or tabs). */
+.cl b {
+  font-weight: 400;
+  display: inline-block;
+  text-shadow: var(--halo), var(--halo);
+}
+.cl b::before {
+  content: '';
+  display: inline-block;
+  width: 0.6em;
+  height: 0.6em;
+  margin-right: 0.8ch;
+  background: currentColor;
+  vertical-align: 0.04em;
+}
+html:not(.motion) .overlay {
+  display: none;
+}
+#fps {
+  display: none;
+  position: fixed;
+  left: 8px;
+  bottom: 8px;
+  z-index: 9;
+  padding: 2px 6px;
+  font-size: 12px;
+  color: var(--ink);
+  background: var(--pop);
+}
+#fps:target {
+  display: block;
+}
+.corner {
+  position: absolute;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: var(--paper);
+  white-space: nowrap;
+  text-shadow: var(--halo), var(--halo);
+}
+.count {
+  display: none;
+}
+.count .n {
+  color: var(--paper);
+  margin-left: 1.2ch;
+}
+.ch {
+  display: inline-block;
+  position: relative;
+}
+.ch .g {
+  display: inline-block;
+}
+.bl {
+  display: inline-block;
+  width: 0;
+  height: 0;
+  vertical-align: baseline;
+}
+.sp {
+  display: inline-block;
+  width: 0.64em;
+}
+
+/* Scroll reveal: a line fades in the first time it enters the view (opacity only, no reflow). */
+.fade-in {
+  animation: fade-in 0.45s ease;
+}
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}

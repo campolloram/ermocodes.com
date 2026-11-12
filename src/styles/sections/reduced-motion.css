@@ -1,0 +1,25 @@
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  .caret,
+  .brand i {
+    animation: none;
+  }
+  #ascii,
+  .fig-slot::before {
+    transition: none;
+  }
+  .bracket .b,
+  .bracket .t {
+    transition: none;
+  }
+  .lanes {
+    display: none !important;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fade-in {
+    animation: none;
+  }
+}

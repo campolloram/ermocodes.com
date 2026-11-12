@@ -1,0 +1,15 @@
+/* ---------- 02 what i do ---------- */
+.do-list li {
+  padding: 18px 0;
+  border-top: 1px solid var(--rule);
+  font-size: 16px;
+  color: var(--paper);
+}
+.do-list li:last-child {
+  border-bottom: 1px solid var(--rule);
+}
+/* The bold lead: Departure Mono has one weight, so the lead is set apart by the sage accent (the proof line's colour). */
+.do-list strong {
+  font-weight: inherit;
+  color: var(--acc);
+}

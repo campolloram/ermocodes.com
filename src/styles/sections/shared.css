@@ -1,0 +1,178 @@
+/* ---------- shared bits ---------- */
+.lbl {
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: var(--mute);
+  text-shadow: var(--halo);
+}
+.lbl .k,
+.k {
+  color: var(--paper);
+}
+.bracket {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5ch;
+  min-height: 48px;
+  padding: 0 2px;
+  font-size: 17px;
+  color: var(--acc);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.bracket .b {
+  display: inline-block;
+  transition: transform 0.45s var(--snap);
+}
+/* The fill fades in on hover only and goes at once: a link that just lost focus (or a tapped one on
+   a touch screen) never keeps a dim, half-faded fill that reads as a second focus mark. */
+.bracket .t {
+  padding: 2px 4px;
+}
+.bracket:focus-visible .b:first-child {
+  transform: translateX(-7px);
+}
+.bracket:focus-visible .b:last-child {
+  transform: translateX(7px);
+}
+.bracket:focus-visible .t {
+  background: var(--acc);
+  color: var(--ink);
+}
+/* Hover only where a real pointer hovers: on touch, :hover sticks to the last tapped control. */
+@media (hover: hover) {
+  .bracket:hover .b:first-child {
+    transform: translateX(-7px);
+  }
+  .bracket:hover .b:last-child {
+    transform: translateX(7px);
+  }
+  .bracket:hover .t {
+    background: var(--acc);
+    color: var(--ink);
+    transition:
+      background-color 0.25s ease,
+      color 0.25s ease;
+  }
+  .bracket:active .t {
+    background: var(--paper);
+  }
+}
+.top .bracket {
+  font-size: 15px;
+}
+.caret {
+  display: inline-block;
+  width: 0.6em;
+  height: 1em;
+  margin-left: 0.5ch;
+  vertical-align: -2px;
+  background: var(--pop);
+  animation: blink 1.1s steps(1) 4;
+}
+/* Four blinks (4.4 s) and then solid: WCAG 2.2.2 lets an animation run under 5 s without a pause
+   control, and the pages without the control (no WebGL, /404) have none. */
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
+}
+.live {
+  display: inline-block;
+  width: 0.6em;
+  height: 0.6em;
+  margin-right: 0.6ch;
+  background: var(--pop);
+  vertical-align: 0.04em;
+}
+
+/* ---------- extruded headers: 6 hard text-shadow layers, off-white glyphs ----------
+   The shadow sits on the element that sets the font-size (.w, .co-name, .talk, .h2), because an
+   inherited text-shadow is computed in the parent's em. Split letters (.ch .g) carry their own. */
+.w,
+.co-name,
+.talk,
+.h2,
+.proj-name,
+.ch .g {
+  color: var(--hd);
+  text-shadow:
+    calc(var(--ex) * 1 * var(--st)) calc(var(--ey) * 1 * var(--st)) 0 var(--x1),
+    calc(var(--ex) * 2 * var(--st)) calc(var(--ey) * 2 * var(--st)) 0 var(--x1),
+    calc(var(--ex) * 3 * var(--st)) calc(var(--ey) * 3 * var(--st)) 0 var(--x2),
+    calc(var(--ex) * 4 * var(--st)) calc(var(--ey) * 4 * var(--st)) 0 var(--x2),
+    calc(var(--ex) * 5 * var(--st)) calc(var(--ey) * 5 * var(--st)) 0 var(--x3),
+    calc(var(--ex) * 6 * var(--st)) calc(var(--ey) * 6 * var(--st)) 0 var(--x3);
+}
+.h2,
+.proj-name {
+  /* small headings: three thicker layers, each at least 1.6px apart and on whole pixels, so the
+     side reads as a solid stepped block (the same direction and tones as the big type) and not
+     as a smear of 1px ghosts */
+  --sm: max(0.04em, 1.6px);
+  text-shadow:
+    round(calc(var(--ex) * 1 * var(--sm)), 1px) round(calc(var(--ey) * 1 * var(--sm)), 1px) 0
+      var(--x1),
+    round(calc(var(--ex) * 2 * var(--sm)), 1px) round(calc(var(--ey) * 2 * var(--sm)), 1px) 0
+      var(--x2),
+    round(calc(var(--ex) * 3 * var(--sm)), 1px) round(calc(var(--ey) * 3 * var(--sm)), 1px) 0
+      var(--x3);
+}
+.proj-name .ch .g {
+  text-shadow:
+    round(calc(var(--ex) * 1 * var(--sm)), 1px) round(calc(var(--ey) * 1 * var(--sm)), 1px) 0
+      var(--x1),
+    round(calc(var(--ex) * 2 * var(--sm)), 1px) round(calc(var(--ey) * 2 * var(--sm)), 1px) 0
+      var(--x2),
+    round(calc(var(--ex) * 3 * var(--sm)), 1px) round(calc(var(--ey) * 3 * var(--sm)), 1px) 0
+      var(--x3);
+}
+/* Company letters tumble in turned; --r (set by the scroll timeline) is their turn, and the
+   shadow vector is turned back by it, so every extrusion points the same way on screen. */
+.co-name .ch .g {
+  --cx: calc(var(--ex) * cos(var(--r, 0deg)) + var(--ey) * sin(var(--r, 0deg)));
+  --cy: calc(var(--ey) * cos(var(--r, 0deg)) - var(--ex) * sin(var(--r, 0deg)));
+  text-shadow:
+    calc(var(--cx) * 1 * var(--st)) calc(var(--cy) * 1 * var(--st)) 0 var(--x1),
+    calc(var(--cx) * 2 * var(--st)) calc(var(--cy) * 2 * var(--st)) 0 var(--x1),
+    calc(var(--cx) * 3 * var(--st)) calc(var(--cy) * 3 * var(--st)) 0 var(--x2),
+    calc(var(--cx) * 4 * var(--st)) calc(var(--cy) * 4 * var(--st)) 0 var(--x2),
+    calc(var(--cx) * 5 * var(--st)) calc(var(--cy) * 5 * var(--st)) 0 var(--x3),
+    calc(var(--cx) * 6 * var(--st)) calc(var(--cy) * 6 * var(--st)) 0 var(--x3);
+}
+/* An M keeps its inner V: three shallow layers (a quarter of the depth) instead of six, so the
+   stacked shadow cannot fill the notch and turn it into an N. */
+.mm,
+.ch .g.mm {
+  text-shadow:
+    calc(var(--ex) * 0.5 * var(--st)) calc(var(--ey) * 0.5 * var(--st)) 0 var(--x1),
+    calc(var(--ex) * 1 * var(--st)) calc(var(--ey) * 1 * var(--st)) 0 var(--x2),
+    calc(var(--ex) * 1.5 * var(--st)) calc(var(--ey) * 1.5 * var(--st)) 0 var(--x3);
+}
+.co-name .ch .g.mm {
+  text-shadow:
+    calc(var(--cx) * 0.5 * var(--st)) calc(var(--cy) * 0.5 * var(--st)) 0 var(--x1),
+    calc(var(--cx) * 1 * var(--st)) calc(var(--cy) * 1 * var(--st)) 0 var(--x2),
+    calc(var(--cx) * 1.5 * var(--st)) calc(var(--cy) * 1.5 * var(--st)) 0 var(--x3);
+}
+.proj-name .mm,
+.proj-name .ch .g.mm {
+  text-shadow:
+    round(calc(var(--ex) * 1 * var(--sm)), 1px) round(calc(var(--ey) * 1 * var(--sm)), 1px) 0
+      var(--x1),
+    round(calc(var(--ex) * 2 * var(--sm)), 1px) round(calc(var(--ey) * 2 * var(--sm)), 1px) 0
+      var(--x2);
+}
+.name {
+  color: var(--hd);
+}
+.split {
+  text-shadow: none;
+}
+.ln {
+  display: block;
+  white-space: nowrap;
+}
+.bracket.strong {
+  color: var(--sig);
+}

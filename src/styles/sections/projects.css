@@ -1,0 +1,27 @@
+/* ---------- 04 projects ---------- */
+.proj {
+  padding: 22px 0;
+  border-top: 1px solid var(--rule);
+}
+.proj:last-child {
+  border-bottom: 1px solid var(--rule);
+}
+.proj-name {
+  font-size: clamp(30px, 9vw, 56px);
+  line-height: 0.95;
+  margin-bottom: 12px;
+  /* the burst bits fly over this row */
+  touch-action: manipulation;
+  cursor: default;
+  -webkit-tap-highlight-color: transparent;
+}
+.proj-line {
+  text-shadow: var(--halo);
+  max-width: 62ch;
+  font-size: 15px;
+  color: var(--paper);
+}
+.proj .bracket {
+  margin-top: 6px;
+  font-size: 15px;
+}

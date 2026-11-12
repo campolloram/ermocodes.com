@@ -1,0 +1,44 @@
+---
+import { calHref } from '../../content/cal';
+import { CONTACT, HERO, LABELS, SITE } from '../../content/site';
+import Bracket from '../chrome/Bracket.astro';
+import Label from '../chrome/Label.astro';
+import { markM } from '../chrome/mark-m';
+
+const cal = calHref(import.meta.env.PUBLIC_CAL_LINK);
+---
+
+{
+  /* With motion on, the hero holds (position: sticky) while .hero-run scrolls past; the run's
+     height is set in sections/motion-scenes.css so the page has its final length from the first paint. */
+}
+<div class="hero-run">
+  <section class="sec hero" id="top" aria-labelledby="name-h">
+    <Label text={LABELS.hero} />
+    <h1 class="name" id="name-h">
+      <span class="sr">{SITE.name}</span>
+      <span class="w w1" aria-hidden="true" set:html={markM(HERO.words[0])} />
+      <span class="fig-slot" aria-hidden="true"></span>
+      <span class="w w2" aria-hidden="true" set:html={markM(HERO.words[1])} />
+    </h1>
+    <div class="hero-info">
+      <p class="lede">{HERO.lede}</p>
+      <p class="proof">{HERO.proof}</p>
+      <p class="visa">{HERO.visa}</p>
+      <div class="hero-links">
+        <Bracket href={`mailto:${SITE.email}`} label={HERO.emailLabel} />
+        <Bracket href={CONTACT.linkedin} label={CONTACT.linkedinLabel} newTab />
+        <Bracket href={CONTACT.cv.href} label={HERO.cvLabel} download />
+        {cal && <Bracket href={cal} label={CONTACT.bookLabel} external />}
+      </div>
+    </div>
+    <p class="meta">
+      <span class="where"
+        >{HERO.where}<i class="live" aria-hidden="true"></i><a class="free" href="#studio"
+          >{HERO.open}</a
+        ></span
+      >
+      <span class="scroll" aria-hidden="true">scroll<i class="caret"></i></span>
+    </p>
+  </section>
+</div>

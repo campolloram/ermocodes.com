@@ -1,0 +1,13 @@
+---
+// The fixed WebGL canvas behind the page (code grid, ASCII figure, particles), the two cluster
+// labels that follow the figure, and the fps HUD (preview builds only). All decorative.
+import { EXPERIENCE } from '../../content/site';
+import { SITE_ENV } from '../../seo/site-env';
+---
+
+<canvas id="ascii" aria-hidden="true"></canvas>
+<div class="overlay" aria-hidden="true">
+  <div class="cl" id="cl-big"><b>{EXPERIENCE.bigLabel.toLowerCase()}</b></div>
+  <div class="cl" id="cl-st"><b>{EXPERIENCE.startupLabel.toLowerCase()}</b></div>
+</div>
+{SITE_ENV === 'preview' && <div id="fps" aria-hidden="true" />}

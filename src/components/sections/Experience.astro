@@ -1,0 +1,64 @@
+---
+import { EXPERIENCE, LABELS, type Company } from '../../content/site';
+import Label from '../chrome/Label.astro';
+import Draft from '../Draft.astro';
+import { markM } from '../chrome/mark-m';
+
+const groups = [
+  { id: 'big', label: EXPERIENCE.bigLabel, companies: EXPERIENCE.big },
+  { id: 'st', label: EXPERIENCE.startupLabel, companies: EXPERIENCE.startups },
+] as const;
+const longest = (c: Company) => Math.max(...c.lines.map((l) => l.length));
+const chapters = groups.flatMap((g) => g.companies);
+---
+
+<section class="sec exp" id="experience" aria-labelledby="exp-h">
+  <div class="stage">
+    <div class="sec-head">
+      <Label text={LABELS.experience} />
+      <h2 class="sr" id="exp-h">{EXPERIENCE.heading}</h2>
+    </div>
+    <p
+      class="corner tr count"
+      aria-hidden="true"
+      data-big={EXPERIENCE.bigLabel.toLowerCase()}
+      data-st={EXPERIENCE.startupLabel.toLowerCase()}
+    >
+      <span class="g">{EXPERIENCE.bigLabel.toLowerCase()}</span>
+      <span class="n">1/3</span>
+    </p>
+    {
+      groups.map((group) => (
+        <>
+          <h3 class="group-h">{group.label}</h3>
+          {group.companies.map((co) => (
+            <article class="co" data-g={group.id}>
+              <h4 class="co-name" data-n={longest(co)}>
+                <span class="sr">{co.name}</span>
+                {co.lines.map((line) => (
+                  <span class="ln" aria-hidden="true" set:html={markM(line)} />
+                ))}
+              </h4>
+              <p class="co-meta">
+                <span class="role">{co.role}</span> <span class="dot">·</span>{' '}
+                <span class="yr">
+                  <Draft v={co.years} />
+                </span>{' '}
+                <span class="stk">
+                  <span class="dot">·</span> {co.stack}
+                </span>
+              </p>
+            </article>
+          ))}
+        </>
+      ))
+    }
+  </div>
+  {
+    /* Desktop with motion on: the sticky stage holds while this run scrolls past, one chapter's
+      scroll distance per company (motion-scenes.css), so the page has its final length from the
+      first paint; each <i> is also a stop. Not shown on a phone (a plain list) or without motion. */
+  }
+  <div class="exp-run" aria-hidden="true">{chapters.map(() => <i />)}</div>
+  <p class="exp-note">{EXPERIENCE.note}</p>
+</section>

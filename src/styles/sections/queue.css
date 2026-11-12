@@ -1,0 +1,188 @@
+/* ---------- 06 queue ---------- */
+.queue-intro {
+  font-size: 16px;
+  max-width: 54ch;
+  margin-bottom: 20px;
+}
+.still {
+  border: 1px solid var(--rule);
+  padding: 14px;
+  font-size: 12px;
+  color: var(--mute);
+  max-width: 74ch;
+}
+.still-status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 20px;
+  padding-bottom: 12px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--rule);
+  color: var(--paper);
+}
+.still-status b {
+  font-weight: 400;
+  color: var(--acc);
+}
+.log li,
+.log-sz li {
+  display: grid;
+  grid-template-columns: 6ch 6ch 1fr;
+  gap: 0 1.2ch;
+  padding: 2px 0;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+.log .lv-WARN,
+.log-sz .lv-WARN {
+  color: var(--sig);
+}
+.log .lv-ERROR,
+.log-sz .lv-ERROR {
+  color: var(--paper);
+}
+.log .lv-ERROR .lvl,
+.log-sz .lv-ERROR .lvl {
+  white-space: nowrap;
+  background: var(--acc);
+  color: var(--ink);
+  text-align: center;
+}
+.do-list + .bracket,
+.about .bracket {
+  margin-top: 14px;
+}
+#queue {
+  /* opaque: the WebGL scene is paused behind it (data-canvas="off") */
+  background: var(--ink);
+}
+.demo {
+  max-width: 74ch;
+}
+.lanes {
+  display: block;
+  width: 100%;
+  height: 96px;
+  margin-bottom: 12px;
+}
+.demo-ctl {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 4px 24px;
+  margin-bottom: 14px;
+  /* the button appears once the script is ready: no layout shift */
+  min-height: 48px;
+}
+/* One grid cell for a live element and its hidden sizers: the cell is as tall as the tallest
+   sizer, so the demo keeps one height through the ready state, the run and its end. */
+.layer {
+  display: grid;
+}
+.layer > * {
+  grid-area: 1 / 1;
+  min-width: 0;
+}
+.demo-ctl .layer {
+  flex: 1 1 28ch;
+  min-width: 0;
+  /* the first line sits level with the button's label (48px box, 14px/21px text) */
+  padding-top: 13px;
+}
+.o-run,
+.log-sz,
+.demo:not([data-state='still']) .o-still,
+.demo:not([data-state='ready']) .o-ready {
+  visibility: hidden;
+}
+/* The live log takes the sizer's height (the end-of-run window) and never grows the cell; the
+   script keeps its newest line in view. */
+.layer > .log {
+  contain: size;
+  overflow: hidden;
+}
+/* Laptops and up: the log sits beside the button, lanes and counters instead of under them, so
+   the press, the outcome and the whole log (the charge, the kill, the replay) share one screen at
+   1280x720. The demo keeps one height through a run all the same (the log's sizer is in its cell). */
+@media (min-width: 900px) {
+  .demo {
+    max-width: none;
+    display: grid;
+    grid-template-columns: minmax(0, 4fr) minmax(0, 8fr);
+    grid-template-areas:
+      'ctl log'
+      'lanes log'
+      'count log'
+      'note note';
+    column-gap: 36px;
+    align-items: start;
+  }
+  .demo > .demo-ctl {
+    grid-area: ctl;
+  }
+  .demo > .lanes {
+    grid-area: lanes;
+  }
+  .demo > .still-status {
+    grid-area: count;
+  }
+  .demo > .layer {
+    grid-area: log;
+    padding-top: 13px;
+  }
+  .demo > .queue-note {
+    grid-area: note;
+  }
+  .demo .log,
+  .demo .log-sz {
+    font-size: 12px;
+  }
+}
+.bracket[hidden] {
+  display: none;
+}
+/* With JS the button is coming: its room is kept from the first paint, so nothing moves when it
+   shows (the outcome line would otherwise wrap under it on a phone). */
+.js .demo-ctl .bracket[hidden] {
+  display: inline-flex;
+  visibility: hidden;
+}
+button.bracket {
+  appearance: none;
+  background: none;
+  border: 0;
+  font: inherit;
+  cursor: pointer;
+}
+/* Running: the control reads as taken, not disabled. Full strength in the accent colour, with the
+   brackets pulsing (still, accent only, under reduced motion); a press is ignored until it settles. */
+button.bracket[aria-disabled='true'] {
+  color: var(--acc);
+  cursor: progress;
+}
+button.bracket[aria-disabled='true'] .b {
+  animation: bracket-run 0.9s steps(2, jump-none) infinite;
+}
+@keyframes bracket-run {
+  50% {
+    opacity: 0.25;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  button.bracket[aria-disabled='true'] .b {
+    animation: none;
+  }
+}
+.mpaused button.bracket[aria-disabled='true'] .b {
+  animation: none;
+}
+.outcome {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--paper);
+}
+.queue-note {
+  margin-top: 12px;
+  font-size: 12px;
+  color: var(--mute);
+}

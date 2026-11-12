@@ -1,0 +1,67 @@
+/* ---------- 08 contact ---------- */
+.contact .lbl {
+  position: absolute;
+  top: calc(var(--head) + 4px);
+  left: var(--gut);
+}
+.contact {
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding-bottom: calc(24px + env(safe-area-inset-bottom));
+}
+.ask {
+  font-size: 17px;
+  color: var(--paper);
+  margin-bottom: 14px;
+  text-shadow: var(--halo);
+}
+.talk {
+  font-size: min(21vw, 34svh);
+  line-height: 0.8;
+  letter-spacing: -0.01em;
+  margin-bottom: 28px;
+}
+.talk .ln:last-child {
+  padding-left: 0.9em;
+}
+.links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 28px;
+  margin-bottom: 6svh;
+}
+.links .bracket {
+  font-size: 19px;
+}
+.email-text {
+  font-size: 15px;
+  color: var(--paper);
+  text-shadow: var(--halo);
+  user-select: all;
+}
+.foot {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px 16px;
+  font-size: 12px;
+  color: var(--mute);
+  border-top: 1px solid var(--rule);
+  padding-top: 14px;
+  max-width: 800px;
+}
+.foot .privacy {
+  flex-basis: 100%;
+}
+/* One CTA group: email first (the address sits against its button), then the links on one gap. */
+.email-pair {
+  display: inline-flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0 14px;
+}
+.links {
+  align-items: baseline;
+}

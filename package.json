@@ -1,0 +1,59 @@
+{
+  "name": "ermocodes-site",
+  "type": "module",
+  "version": "0.0.0",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "astro": "astro",
+    "check": "astro check",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "guard": "node scripts/guard-content.mjs dist",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:e2e": "playwright test --global-timeout=900000",
+    "lhci": "lhci autorun",
+    "verify": "npm run check && npm run lint && npm run format:check && npm run test:coverage && PUBLIC_TEST_HOOKS=1 npm run build && npm run guard && npm run check:bundle && npm run check:drafts && PUBLIC_SITE_ENV=preview npm run check:preview && npm run test:e2e",
+    "cf:worker-exists": "node scripts/cf-worker-exists.mjs ermocodes-site",
+    "cf:bootstrap": "node scripts/cf-bootstrap.mjs",
+    "check:drafts": "node scripts/check-drafts.mjs --strict",
+    "check:bundle": "node scripts/check-bundle.mjs dist",
+    "check:preview": "astro build --outDir dist-preview && node scripts/check-noindex.mjs dist-preview && node scripts/guard-content.mjs dist-preview --no-test-hooks"
+  },
+  "dependencies": {
+    "@astrojs/sitemap": "^3.7.4",
+    "astro": "^7.4.7",
+    "gsap": "3.12.5",
+    "lenis": "1.1.13",
+    "three": "0.170.0"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.12",
+    "@axe-core/playwright": "^4.14.0",
+    "@eslint/js": "^10.0.1",
+    "@lhci/cli": "^0.16.0",
+    "@playwright/test": "^1.65.0",
+    "@resvg/resvg-js": "^2.6.2",
+    "@types/node": "^24.19.2",
+    "@types/three": "0.170.0",
+    "@vitest/coverage-v8": "^5.1.0",
+    "eslint": "^10.14.0",
+    "eslint-plugin-astro": "^3.2.1",
+    "fast-check": "^4.10.2",
+    "globals": "^17.14.0",
+    "prettier": "^3.9.10",
+    "prettier-plugin-astro": "^0.14.1",
+    "satori": "^0.63.2",
+    "typescript": "~5.9.3",
+    "typescript-eslint": "^8.72.1",
+    "vitest": "^5.1.0",
+    "wrangler": "^4.158.0"
+  },
+  "private": true
+}

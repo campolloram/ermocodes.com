@@ -1,0 +1,66 @@
+/* Design tokens, palette "Moss". tokens.ts lists them; tokens.test.ts
+   checks that list against this file. */
+:root {
+  --ink: #131413;
+  --paper: #e6e9e1;
+  --hd: #f5f6f0;
+  --mute: #9a9f93;
+  --acc: #a3bb95;
+  --sig: #cdf03d;
+  --pop: #cdf03d;
+  --hi: #f4ffd0;
+  --x1: #5d6e55;
+  --x2: #3e4a39;
+  --x3: #262e24;
+  --rule: rgba(170, 185, 160, 0.17);
+
+  --gut: 16px;
+  --head: 62px;
+  --f: var(--font-departure), ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  --snap: cubic-bezier(0.16, 1, 0.3, 1);
+  /* Text halo over the canvas */
+  --halo: 0 0 2px var(--ink), 0 0 10px var(--ink), 0 0 18px var(--ink);
+
+  /* Extrusion direction; the motion engine steers it from pointer and scroll. */
+  --ex: 0.7;
+  --ey: 0.8;
+  --st: 0.03em;
+}
+
+/* Stand-ins for Departure Mono until it loads (font-display: swap), sized so their glyph advance
+   and line metrics match it exactly: text wraps and sits the same before and after the swap, so
+   the page keeps its height from the first paint on a slow connection. Astro generates the Courier
+   New one; these cover systems without Courier New (Linux, Android, ChromeOS). Each group shares
+   one advance: 1229/2048 em, 0.6 em, 1233/2048 em. Departure Mono is 7/11 em wide, ascent 1 em,
+   descent 3/11 em, no line gap. astro.config.mjs lists them in the font stack. */
+@font-face {
+  font-family: 'Departure Mono fallback A';
+  src: local('Liberation Mono'), local('Cousine'), local('Droid Sans Mono');
+  size-adjust: 106.0433%;
+  ascent-override: 94.3011%;
+  descent-override: 25.7185%;
+  line-gap-override: 0%;
+}
+@font-face {
+  font-family: 'Departure Mono fallback B';
+  src: local('Noto Sans Mono'), local('FreeMono');
+  size-adjust: 106.0606%;
+  ascent-override: 94.2857%;
+  descent-override: 25.7143%;
+  line-gap-override: 0%;
+}
+@font-face {
+  font-family: 'Departure Mono fallback C';
+  src: local('DejaVu Sans Mono');
+  size-adjust: 105.6993%;
+  ascent-override: 94.608%;
+  descent-override: 25.8022%;
+  line-gap-override: 0%;
+}
+
+@media (min-width: 900px) {
+  :root {
+    --gut: 48px;
+    --head: 84px;
+  }
+}

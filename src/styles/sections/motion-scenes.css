@@ -1,0 +1,174 @@
+/* The pinned scenes hold with position: sticky, and the scroll distance they hold for is reserved
+   here, under html.motion (set by the head script before the first paint): the page has its final
+   length from the first paint, so it never grows under the reader on a slow phone and a #link or a
+   reload lands in the right place. timeline.ts reads these lengths back from the DOM. */
+.exp-run {
+  display: none;
+}
+/* boot.ts plainDom: the off-screen Experience section for the one frame its layout switches. */
+.exp.mswap {
+  visibility: hidden;
+}
+.motion .hero {
+  position: sticky;
+  top: 0;
+}
+/* The hero hold in config.ts (SCROLL.hero): the hero holds for 90% of a screen while the name dusts away. */
+.motion .hero-run::after {
+  content: '';
+  display: block;
+  height: 90svh;
+}
+/* Desktop and tablet (700px and up, not a short coarse screen): the sticky stage holds one chapter per company. On a phone
+   (under 700px or a landscape phone) Experience stays the plain list below, motion on or not (decision 11). */
+@media (width >= 700px) and (not ((pointer: coarse) and (max-height: 500px))) {
+  .motion .exp-run {
+    display: block;
+  }
+  /* The chapter height (60svh; see SCROLL.snap in config.ts): each chapter scrolls 60% of a screen (blind UX r1: 95% left ~5 screens of empty dark). The stop inside each
+     chapter (SCROLL.snap.at, 0.4; scroll-sync.test.ts checks the pair) is where the browser snaps on a touch screen; the stage is 100svh
+     above the run and the root's scroll-padding is the header, so the margin is
+     100svh - 0.4 * 60svh - the header. */
+  .motion .exp-run > i {
+    display: block;
+    height: 60svh;
+    scroll-snap-align: start;
+    scroll-margin-top: calc(76svh - var(--head));
+  }
+  .motion .exp {
+    padding: 0;
+    border: 0;
+  }
+  .motion .stage {
+    /* holds while .exp-run scrolls past: sticky, not a fixed pin */
+    position: sticky;
+    top: 0;
+    height: 100svh;
+    min-height: 600px;
+    padding: 0;
+    overflow: hidden;
+  }
+  .motion .stage .sec-head {
+    position: absolute;
+    top: calc(var(--head) + 4px);
+    left: var(--gut);
+    margin: 0;
+  }
+  .motion .count {
+    display: block;
+    /* as wide as the longest read-out, so a group change never moves the box */
+    min-width: 18ch;
+    text-align: right;
+    top: calc(var(--head) + 4px);
+    right: var(--gut);
+  }
+  .motion .group-h {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    margin: 0;
+  }
+  .motion .co {
+    position: absolute;
+    left: var(--gut);
+    right: var(--gut);
+    bottom: calc(8svh + env(safe-area-inset-bottom));
+    border: 0;
+    padding: 0;
+    /* opacity, not visibility: all six stay in the accessibility tree and in the page text */
+    opacity: 0;
+  }
+  .motion .co-meta {
+    margin-top: 0.55em;
+  }
+}
+/* No-motion page: every name has the same size, and the meta sits right under it. A two-line name
+   (Pronto Housing) runs on as one line where it fits and wraps at the space only where it must. */
+html:not(.motion) .co-name[data-n] {
+  font-size: min(calc((100vw - 2 * var(--gut)) / (9 * 0.66)), 14svh);
+}
+html:not(.motion) .co-name {
+  line-height: 1.12;
+}
+html:not(.motion) .co-name .ln {
+  display: inline;
+  white-space: normal;
+}
+html:not(.motion) .co-name .ln + .ln::before {
+  content: ' ';
+}
+@media (width < 700px), ((pointer: coarse) and (max-height: 500px)) {
+  .co-name[data-n] {
+    font-size: min(calc((100vw - 2 * var(--gut)) / (9 * 0.66)), 14svh);
+  }
+  .co-name {
+    /* a name that wraps (Pronto Housing) needs room for the extrusion of line one above line two */
+    line-height: 1.12;
+  }
+  .co-name .ln {
+    display: inline;
+    white-space: normal;
+  }
+  .co-name .ln + .ln::before {
+    content: ' ';
+  }
+}
+/* Desktop without the held stage (reduced motion, no WebGL, no script): one company per screen,
+   and the browser snaps to them (proximity, on these blocks only, so the rest of the page is
+   never caught). A touch screen with the stage snaps to the run's stops instead (.snapnative,
+   set by timeline.ts); with Lenis the snap is done in script, never both. */
+@media (width >= 700px) and (not ((pointer: coarse) and (max-height: 500px))) {
+  html:not(.motion) .co {
+    min-height: calc(100svh - var(--head));
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    scroll-snap-align: start;
+  }
+  /* The section's own top is the first stop (label, group name, first company), so
+     a #experience link lands where it points; a group name stays in view above its first company. */
+  html:not(.motion) .exp {
+    scroll-snap-align: start;
+  }
+  html:not(.motion) .co:first-of-type {
+    scroll-snap-align: none;
+  }
+  html:not(.motion) .group-h + .co {
+    scroll-margin-top: 64px;
+  }
+  html:not(.motion),
+  html.snapnative {
+    scroll-snap-type: y proximity;
+  }
+}
+/* Reduced motion on a desktop: a compact flow list, no full-screen slot or snap per company. */
+@media (width >= 700px) and (not ((pointer: coarse) and (max-height: 500px))) and (prefers-reduced-motion: reduce) {
+  html:not(.motion) .co {
+    min-height: 0;
+    display: block;
+    scroll-snap-align: none;
+  }
+  html:not(.motion),
+  html.snapnative {
+    scroll-snap-type: none;
+  }
+}
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+/* With motion on, the scroll layer owns smooth scrolling (anchors included) once it is up: Lenis,
+   or on a touch screen one explicit native glide per in-page link. A CSS smooth behaviour would
+   turn every programmatic scroll (ScrollTrigger refresh, scripted scroll) into an animation that
+   a slow main thread restarts every frame and never lands, and before the scroll layer is up it
+   would play a page opened on a #link as a long glide down from the top instead of opening
+   there. */
+html.motion,
+html.lenis {
+  scroll-behavior: auto !important;
+}
+.lenis.lenis-stopped {
+  overflow: hidden;
+}

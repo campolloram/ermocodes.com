@@ -1,0 +1,35 @@
+---
+// [ bracket link ]: the brackets slide 7px apart on hover. Tap target is at least 48px high.
+interface Props {
+  href: string;
+  label: string;
+  external?: boolean;
+  /** Opens in a new tab (rel="noopener"). */
+  newTab?: boolean;
+  /** A file download (the CV). */
+  download?: boolean;
+  /** The main button of a pair. */
+  strong?: boolean;
+}
+const {
+  href,
+  label,
+  external = false,
+  newTab = false,
+  download = false,
+  strong = false,
+} = Astro.props;
+const rel = newTab ? 'noopener' : external ? 'noopener noreferrer' : undefined;
+---
+
+<a
+  class:list={['bracket', { strong }]}
+  href={href}
+  rel={rel}
+  target={newTab ? '_blank' : undefined}
+  download={download ? '' : undefined}
+  ><span class="b" aria-hidden="true">[</span><span class="t">{label}</span><span
+    class="b"
+    aria-hidden="true">]</span
+  ></a
+>

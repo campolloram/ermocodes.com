@@ -1,0 +1,24 @@
+---
+import { LABELS, STACK } from '../../content/site';
+import Label from '../chrome/Label.astro';
+import Draft from '../Draft.astro';
+---
+
+<section class="sec" id="stack" data-scene="grid" aria-labelledby="stack-h">
+  <div class="sec-head">
+    <Label text={LABELS.stack} />
+    <h2 class="h2" id="stack-h">{STACK.heading}</h2>
+  </div>
+  <dl class="stack sec-body">
+    {
+      STACK.groups.map((g) => (
+        <div class="stack-row">
+          <dt>{g.name}</dt>
+          <dd>
+            <Draft v={g.items} />
+          </dd>
+        </div>
+      ))
+    }
+  </dl>
+</section>

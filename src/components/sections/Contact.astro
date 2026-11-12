@@ -1,0 +1,35 @@
+---
+import { calHref } from '../../content/cal';
+import { CONTACT, LABELS, SITE } from '../../content/site';
+import Bracket from '../chrome/Bracket.astro';
+import Label from '../chrome/Label.astro';
+import Draft from '../Draft.astro';
+
+// [book a call] is a plain link out to Cal.com, rendered only when PUBLIC_CAL_LINK is set.
+const cal = calHref(import.meta.env.PUBLIC_CAL_LINK);
+---
+
+<section class="sec contact" id="contact" aria-labelledby="talk-h">
+  <Label text={LABELS.contact} />
+  <p class="ask">{CONTACT.ask}</p>
+  <h2 class="talk" id="talk-h">
+    <span class="sr">{CONTACT.heading}</span>
+    <span class="ln" aria-hidden="true">LET'S</span>
+    <span class="ln" aria-hidden="true">TALK</span>
+  </h2>
+  <div class="links">
+    <span class="email-pair">
+      <Bracket href={`mailto:${SITE.email}`} label={CONTACT.emailLabel} />
+      <span class="email-text">{CONTACT.emailText}</span>
+    </span>
+    {cal && <Bracket href={cal} label={CONTACT.bookLabel} external />}
+    <Bracket href={CONTACT.linkedin} label={CONTACT.linkedinLabel} newTab />
+    <Bracket href={CONTACT.cv.href} label={CONTACT.cv.label} download strong />
+    <Bracket href={CONTACT.cvFull.href} label={CONTACT.cvFull.label} download />
+  </div>
+  <div class="foot">
+    <span>{CONTACT.footLeft}</span>
+    <span>{CONTACT.footRight}</span>
+    <span class="privacy"><Draft v={CONTACT.privacy} /></span>
+  </div>
+</section>

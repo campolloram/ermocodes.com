@@ -1,0 +1,38 @@
+---
+import { calHref } from '../../content/cal';
+import { CONTACT, LABELS, SITE, STUDIO } from '../../content/site';
+import Bracket from '../chrome/Bracket.astro';
+import Label from '../chrome/Label.astro';
+
+const cal = calHref(import.meta.env.PUBLIC_CAL_LINK);
+---
+
+<section class="sec studio" id="studio" aria-labelledby="studio-h">
+  <div class="sec-head">
+    <Label text={LABELS.studio} />
+    <h2 class="h2" id="studio-h">{STUDIO.heading}</h2>
+  </div>
+  <div class="sec-body">
+    <p class="studio-intro">{STUDIO.intro}</p>
+    <ul class="offers">
+      {
+        STUDIO.offers.map((o) => (
+          <li>
+            <span class="offer-name">{o.name}</span>
+            <span class="offer-time">{o.time}</span>
+            <span class="offer-line">{o.line}</span>
+          </li>
+        ))
+      }
+    </ul>
+    <h3 class="how-h">{STUDIO.howHeading}</h3>
+    <ol class="how">
+      {STUDIO.steps.map((step) => <li>{step}</li>)}
+    </ol>
+    <p class="studio-cta">
+      {cal && <Bracket href={cal} label={CONTACT.bookLabel} external />}
+      {cal && <span class="or">{STUDIO.or}</span>}
+      <Bracket href={`mailto:${SITE.email}`} label={CONTACT.emailLabel} />
+    </p>
+  </div>
+</section>

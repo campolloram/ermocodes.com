@@ -1,0 +1,37 @@
+---
+import { MOTION_CTL, NAV_CTA, NAV_STUDIO, SITE } from '../../content/site';
+import Draft from '../Draft.astro';
+import Bracket from './Bracket.astro';
+
+interface Props {
+  /** Pages other than the CV link back to it ("/#contact"). */
+  offPage?: boolean;
+}
+const { offPage = false } = Astro.props;
+const prefix = offPage ? '/' : '';
+---
+
+<header class="top">
+  <a class="brand" href={`${prefix}#top`}
+    ><i aria-hidden="true"></i><span class="bt">{SITE.brand}</span></a
+  >
+  <div class="top-r">
+    {
+      !offPage && (
+        <button class="mctl" type="button" data-mctl>
+          <i aria-hidden="true" />
+          <span class="on">
+            <Draft v={MOTION_CTL.pause} />
+          </span>
+          <span class="off">
+            <Draft v={MOTION_CTL.play} />
+          </span>
+        </button>
+      )
+    }
+    <nav aria-label="Site">
+      <Bracket href={`${prefix}#studio`} label={NAV_STUDIO} />
+      <Bracket href={`${prefix}#contact`} label={NAV_CTA} />
+    </nav>
+  </div>
+</header>

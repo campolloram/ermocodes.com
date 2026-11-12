@@ -1,0 +1,33 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: chore
+      include: scope
+    groups:
+      npm-minor-patch:
+        update-types: [minor, patch]
+    ignore:
+      # Astro majors are reviewed by hand.
+      - dependency-name: astro
+        update-types: ['version-update:semver-major']
+      - dependency-name: '@astrojs/*'
+        update-types: ['version-update:semver-major']
+      # Pinned to 5.9 until @astrojs/check supports TypeScript 7.
+      - dependency-name: typescript
+        update-types: ['version-update:semver-major']
+      # 1.x breaks Tailwind class sorting in .astro (prettier-plugin-tailwindcss#451).
+      - dependency-name: prettier-plugin-astro
+        versions: ['>=1.0.0']
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: ci
+    groups:
+      actions:
+        patterns: ['*']

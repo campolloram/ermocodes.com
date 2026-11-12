@@ -1,0 +1,23 @@
+---
+import { LABELS, WHAT_I_DO } from '../../content/site';
+import Bracket from '../chrome/Bracket.astro';
+import Label from '../chrome/Label.astro';
+---
+
+<section class="sec" id="what-i-do" aria-labelledby="do-h">
+  <div class="sec-head">
+    <Label text={LABELS.whatIDo} />
+    <h2 class="h2" id="do-h">{WHAT_I_DO.heading}</h2>
+  </div>
+  <ul class="do-list sec-body">
+    {
+      WHAT_I_DO.items.map((item) => (
+        <li>
+          <strong>{item.lead}</strong>
+          {item.rest}
+        </li>
+      ))
+    }
+  </ul>
+  <Bracket href={WHAT_I_DO.more.href} label={WHAT_I_DO.more.label} />
+</section>

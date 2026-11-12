@@ -1,0 +1,11 @@
+---
+// Terminal corner tag: "NN / name", the number in paper, the name muted.
+interface Props {
+  text: string;
+  id?: string;
+}
+const { text, id } = Astro.props;
+const [num, ...rest] = text.split(' / ');
+---
+
+<p class="lbl" id={id}><span class="k">{num}</span> / {rest.join(' / ')}</p>

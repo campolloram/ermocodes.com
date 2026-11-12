@@ -1,0 +1,30 @@
+---
+import { LABELS, PROJECTS } from '../../content/site';
+import Bracket from '../chrome/Bracket.astro';
+import Label from '../chrome/Label.astro';
+import Draft from '../Draft.astro';
+import { markM } from '../chrome/mark-m';
+---
+
+<section class="sec" id="projects" aria-labelledby="proj-h">
+  <div class="sec-head">
+    <Label text={LABELS.projects} />
+    <h2 class="h2" id="proj-h">{PROJECTS.heading}</h2>
+  </div>
+  <ul class="sec-body">
+    {
+      PROJECTS.items.map((p) => (
+        <li class="proj" data-proj>
+          <h3 class="proj-name">
+            <span class="sr">{p.name}</span>
+            <span class="ln" aria-hidden="true" set:html={markM(p.name)} />
+          </h3>
+          <p class="proj-line">
+            <Draft v={p.line} />
+          </p>
+          {'href' in p && p.href && <Bracket href={p.href} label="see the queue" />}
+        </li>
+      ))
+    }
+  </ul>
+</section>
