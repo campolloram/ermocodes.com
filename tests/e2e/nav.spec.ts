@@ -2,6 +2,7 @@
 // with motion on (pins and the sticky stage in place); lines fade in on enter with the real text always in the DOM; scrolling with motion on keeps CLS in budget; the queue demo's
 // control is in the tab order from load.
 import { expect, test, type Page } from '@playwright/test';
+import { PHONE_QUERY } from '../../src/motion/config';
 import { CLS_BUDGET, trackLayoutShifts } from './helpers/cls';
 import { failWebGLAfterProbe, hasWebGL, needsWebGL } from './helpers/webgl';
 
@@ -677,7 +678,6 @@ test.describe('rotation', () => {
     expect(await builtAsPhone(page)).toBe(true);
   });
 
-  const PHONE_QUERY = '(pointer: coarse) and (max-height: 500px)';
   /** Counts the phone query's `change` events (the ones that start the page's debounce timer). */
   const countChanges = (page: Page) =>
     page.evaluate((q) => {
@@ -769,7 +769,18 @@ test('a fall-back after the scroll layer started gives PageDown, the wheel and i
     expect
       .poll(async () => {
         await page.evaluate(() => scrollTo({ top: 0, behavior: 'instant' }));
-        return y();
+        // At rest only if it stays at 0 over several frames: a Chromium glide survives scrollTo.
+        return page.evaluate(
+          () =>
+            new Promise<number>((res) => {
+              let n = 0;
+              const tick = () => {
+                if (Math.round(scrollY) !== 0 || ++n >= 20) res(Math.round(scrollY));
+                else requestAnimationFrame(tick);
+              };
+              requestAnimationFrame(tick);
+            }),
+        );
       })
       .toBe(0);
   await resetTop();
