@@ -516,29 +516,32 @@ for (const width of [412, 430]) {
 }
 
 // Issue 12: at 481-539px the pause label wrapped to two lines and touched the brand.
-for (const width of [390, 481, 510, 539, 1440]) {
-  test(`the pause label stays on one line at ${width}px`, async ({ page }, testInfo) => {
+// Up to 539px the control is icon-only; from 540px the label shows on one line.
+for (const width of [390, 481, 520, 540, 1440]) {
+  test(`the pause control keeps clear of the brand at ${width}px`, async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'chromium-desktop', 'viewport is set by the test');
     await page.setViewportSize({ width, height: 844 });
     await page.goto('/');
-    await settle(page, testInfo.project.name);
-    const label = page.locator('.mctl > span:visible');
-    if ((await page.locator('html.motion').count()) === 0) return; // no control without motion
-    await expect(label).toHaveCount(1);
-    const lines = await label.evaluate((el) => {
-      const r = document.createRange();
-      r.selectNodeContents(el);
-      return new Set([...r.getClientRects()].map((q) => Math.round(q.top))).size;
-    });
-    expect(lines, 'label text occupies one line').toBe(1);
-    const h = (await label.boundingBox())?.height ?? 0;
-    expect(h).toBeLessThan(
-      parseFloat(await label.evaluate((el) => getComputedStyle(el).fontSize)) * 2,
-    );
+    needsWebGL(testInfo, await settle(page, testInfo.project.name));
+    const ctlBox = await page.locator('.mctl').boundingBox();
     const brand = await page.locator('.brand').boundingBox();
-    const ctl = await page.locator('.mctl').boundingBox();
-    if (!brand || !ctl) throw new Error('header boxes missing');
-    expect(brand.x + brand.width).toBeLessThanOrEqual(ctl.x);
+    if (!brand || !ctlBox) throw new Error('header boxes missing');
+    const label = page.locator('.mctl > span').first();
+    if (width <= 539) {
+      // icon-only: the label is clipped to 1px and the button stays a 44px target
+      const lw = await label.evaluate((el) => el.getBoundingClientRect().width);
+      expect(lw, 'label is clipped').toBeLessThanOrEqual(1);
+      expect(ctlBox.width).toBeGreaterThanOrEqual(44);
+      expect(ctlBox.height).toBeGreaterThanOrEqual(44);
+    } else {
+      const lines = await label.evaluate((el) => {
+        const r = document.createRange();
+        r.selectNodeContents(el);
+        return new Set([...r.getClientRects()].map((q) => Math.round(q.top))).size;
+      });
+      expect(lines, 'label text occupies one line').toBe(1);
+    }
+    expect(brand.x + brand.width).toBeLessThanOrEqual(ctlBox.x - 4);
     await expect(page.locator('.top')).toHaveJSProperty('scrollWidth', width);
   });
 }
