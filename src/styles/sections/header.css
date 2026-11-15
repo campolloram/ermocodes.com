@@ -41,6 +41,7 @@
   font-size: 12px;
   letter-spacing: 0.04em;
   color: var(--mute);
+  white-space: nowrap; /* 540px+: with a wider fallback font the label wrapped under the brand */
   background: none;
   border: 0;
   cursor: pointer;

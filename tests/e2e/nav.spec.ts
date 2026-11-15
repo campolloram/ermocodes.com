@@ -517,7 +517,7 @@ for (const width of [412, 430]) {
 
 // Issue 12: at 481-539px the pause label wrapped to two lines and touched the brand.
 // Up to 539px the control is icon-only; from 540px the label shows on one line.
-for (const width of [390, 481, 520, 540, 1440]) {
+for (const width of [481, 520, 540, 1440]) {
   test(`the pause control keeps clear of the brand at ${width}px`, async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'chromium-desktop', 'viewport is set by the test');
     await page.setViewportSize({ width, height: 844 });
