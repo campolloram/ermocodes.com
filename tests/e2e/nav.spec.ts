@@ -515,9 +515,9 @@ for (const width of [412, 430]) {
   });
 }
 
-// Issue 12: at 481-539px the pause label wrapped to two lines and touched the brand.
-// Up to 539px the control is icon-only; from 540px the label shows on one line.
-for (const width of [481, 520, 540, 1440]) {
+// Issue 12: at 481-599px the pause label wrapped to two lines and touched the brand.
+// Up to 599px the control is icon-only; from 600px the label shows on one line.
+for (const width of [481, 520, 540, 599, 600, 1440]) {
   test(`the pause control keeps clear of the brand at ${width}px`, async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'chromium-desktop', 'viewport is set by the test');
     await page.setViewportSize({ width, height: 844 });
@@ -527,7 +527,7 @@ for (const width of [481, 520, 540, 1440]) {
     const brand = await page.locator('.brand').boundingBox();
     if (!brand || !ctlBox) throw new Error('header boxes missing');
     const label = page.locator('.mctl > span').first();
-    if (width <= 539) {
+    if (width <= 599) {
       // icon-only: the label is clipped to 1px and the button stays a 44px target
       const lw = await label.evaluate((el) => el.getBoundingClientRect().width);
       expect(lw, 'label is clipped').toBeLessThanOrEqual(1);
