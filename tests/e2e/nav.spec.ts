@@ -515,6 +515,34 @@ for (const width of [412, 430]) {
   });
 }
 
+// Issue 12: at 481-539px the pause label wrapped to two lines and touched the brand.
+for (const width of [390, 481, 510, 539, 1440]) {
+  test(`the pause label stays on one line at ${width}px`, async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'chromium-desktop', 'viewport is set by the test');
+    await page.setViewportSize({ width, height: 844 });
+    await page.goto('/');
+    await settle(page, testInfo.project.name);
+    const label = page.locator('.mctl > span:visible');
+    if ((await page.locator('html.motion').count()) === 0) return; // no control without motion
+    await expect(label).toHaveCount(1);
+    const lines = await label.evaluate((el) => {
+      const r = document.createRange();
+      r.selectNodeContents(el);
+      return new Set([...r.getClientRects()].map((q) => Math.round(q.top))).size;
+    });
+    expect(lines, 'label text occupies one line').toBe(1);
+    const h = (await label.boundingBox())?.height ?? 0;
+    expect(h).toBeLessThan(
+      parseFloat(await label.evaluate((el) => getComputedStyle(el).fontSize)) * 2,
+    );
+    const brand = await page.locator('.brand').boundingBox();
+    const ctl = await page.locator('.mctl').boundingBox();
+    if (!brand || !ctl) throw new Error('header boxes missing');
+    expect(brand.x + brand.width).toBeLessThanOrEqual(ctl.x);
+    await expect(page.locator('.top')).toHaveJSProperty('scrollWidth', width);
+  });
+}
+
 test('on a phone the brand and the pause control draw their own focus ring', async ({
   page,
 }, testInfo) => {
