@@ -29,7 +29,19 @@ import {
 import { MELT, NAME } from '../config.ts';
 import { letterGuard, setLetterHidden } from '../dom/split.ts';
 import { canvasFont } from '../font.ts';
-import { clamp01, rand } from '../math.ts';
+import { rand } from '../math.ts';
+import {
+  dropRadius,
+  dropRate,
+  heatTarget,
+  lowestPick,
+  meltAllowed,
+  nearness,
+  parseCssRgb,
+  planAtlas,
+  stepDrop,
+  stepHeat,
+} from './melt-core.ts';
 import { extrusion, heroDust, type Letter } from '../state.ts';
 import { pixelsOf } from './pixels.ts';
 import { mouse } from './pointer.ts';
@@ -53,23 +65,10 @@ export interface Melt {
 
 const DROPS = 3;
 
-const FALLBACK_RGB: readonly [number, number, number] = [245, 246, 240];
-
-/**
- * "#rgb", "#rrggbb", "rgb(r, g, b)" or "rgba(...)" to 0..1 floats (what the DOM paints, with no
- * colour conversion). Anything else (oklch(), a name, an empty token) gets the paper colour.
- */
+/** CSS colour to 0..1 floats (what the DOM paints, with no colour conversion); see `parseCssRgb`. */
 export function rgb(css: string): Vector3 {
-  const t = css.trim();
-  let c: readonly number[] = FALLBACK_RGB;
-  const hex = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(t);
-  const fn = /^rgba?\(\s*([\d.]+)[\s,]+([\d.]+)[\s,]+([\d.]+)/i.exec(t);
-  if (hex) {
-    const h = hex[1]!.length === 3 ? [...hex[1]!].map((x) => x + x).join('') : hex[1]!;
-    const n = parseInt(h, 16);
-    c = [n >> 16, (n >> 8) & 255, n & 255];
-  } else if (fn) c = [Number(fn[1]), Number(fn[2]), Number(fn[3])];
-  return new Vector3(c[0]! / 255, c[1]! / 255, c[2]! / 255);
+  const c = parseCssRgb(css);
+  return new Vector3(c[0] / 255, c[1] / 255, c[2] / 255);
 }
 
 interface Cell {
@@ -223,19 +222,9 @@ export function createMelt(letters: Letter[], nameEl: HTMLElement): Melt {
     ch = Math.ceil(fs * (1 + P.top + P.bottom));
     const baseLocal = fs * (1 + P.top);
     // The atlas scale follows the pixel ratio, kept inside the texture limit.
-    let sc = Math.min(view.dpr, MELT.maxScale);
-    let cols = 1;
-    for (;;) {
-      cols = Math.max(1, Math.min(NL, Math.floor(MELT.maxAtlas / (cw * sc + 2)), 6));
-      const rows = Math.ceil(NL / cols);
-      if (rows * (ch * sc + 2) <= MELT.maxAtlas && cols * (cw * sc + 2) <= MELT.maxAtlas) break;
-      sc *= 0.85;
-      if (sc < 0.4) return disable('atlas-size');
-    }
-    const cellW = Math.ceil(cw * sc) + 2;
-    const cellH = Math.ceil(ch * sc) + 2;
-    const AW = cols * cellW;
-    const AH = Math.ceil(NL / cols) * cellH;
+    const plan = planAtlas(NL, cw, ch, view.dpr);
+    if (!plan) return disable('atlas-size');
+    const { scale: sc, cols, cellW, cellH, width: AW, height: AH } = plan;
     const canvas = document.createElement('canvas');
     canvas.width = AW;
     canvas.height = AH;
@@ -313,13 +302,9 @@ export function createMelt(letters: Letter[], nameEl: HTMLElement): Melt {
     const slot = Array.prototype.findIndex.call(c.da, (a: number) => a <= 0);
     if (slot < 0) return;
     const px = pixelsOf(letters[i]!.c);
-    if (!px.length) return;
+    const best = lowestPick(px);
+    if (!best) return;
     const u = fs / 11;
-    let best = px[Math.floor(Math.random() * px.length)]!;
-    for (let k = 0; k < 2; k += 1) {
-      const cand = px[Math.floor(Math.random() * px.length)]!;
-      if (cand[1] > best[1]) best = cand;
-    }
     const x = MELT.pad.x * fs + (best[0] + 0.5) * u;
     const y = c.ink.value.y + (best[1] + 0.5) * u;
     if (Math.hypot(nr.left + c.x0 + x - cx, nr.top + c.y0 + y - cy) > MELT.radius * 0.9) return;
@@ -332,15 +317,15 @@ export function createMelt(letters: Letter[], nameEl: HTMLElement): Melt {
   }
 
   function update(time: number, dt: number, settled: boolean, slow: boolean): number {
-    const allowed =
-      NL > 0 &&
-      settled &&
-      !slow &&
-      !view.phone &&
-      heroDust.p < 0.0005 &&
-      root.classList.contains('motion') &&
-      !root.classList.contains('mpaused') &&
-      !letterGuard.noHide;
+    const allowed = meltAllowed(
+      NL,
+      settled,
+      slow,
+      view.phone,
+      heroDust.p,
+      root.classList,
+      letterGuard.noHide,
+    );
     if (!allowed) {
       if (activeN || watchdog) release();
       return 0;
@@ -378,31 +363,21 @@ export function createMelt(letters: Letter[], nameEl: HTMLElement): Melt {
     for (let i = 0; i < NL; i += 1) {
       const c = cells[i]!;
       const b = c.box;
-      const dxo = Math.max(nr.left + b[0] - cx, 0, cx - (nr.left + b[2]));
-      const dyo = Math.max(nr.top + b[1] - cy, 0, cy - (nr.top + b[3]));
-      const near = mOn ? clamp01(1 - Math.hypot(dxo, dyo) / MELT.radius) : 0;
-      const target = near > 0 ? 0.35 + 0.65 * near : 0;
-      const h0 = c.heat.value;
-      let h = h0 + (target - h0) * (1 - Math.exp(-wall * (target > h0 ? MELT.rise : MELT.fall)));
-      if (target === 0 && h < MELT.off) h = 0;
+      const near = mOn
+        ? nearness(nr.left + b[0], nr.top + b[1], nr.left + b[2], nr.top + b[3], cx, cy)
+        : 0;
+      const h = stepHeat(c.heat.value, heatTarget(near), wall);
       c.heat.value = h;
 
       let live = 0;
       for (let d = 0; d < DROPS; d += 1) {
         if (c.da[d]! > 0) {
-          c.dl[d] = c.dl[d]! - dt;
-          c.dv[d] = c.dv[d]! + MELT.dropGravity * dt;
-          c.dy[d] = c.dy[d]! + c.dv[d]! * dt;
-          if (c.dl[d]! <= 0 || c.dy[d]! > ch - 4) c.da[d] = 0;
-          else {
-            c.da[d] = clamp01(c.dl[d]! * 2.2);
-            live += 1;
-          }
+          if (stepDrop(c.dy, c.dv, c.dl, c.da, d, dt, ch)) live += 1;
         }
-        const rad = Math.max(1, c.dr[d]! * (0.6 + 0.4 * c.da[d]!));
+        const rad = dropRadius(c.dr[d]!, c.da[d]!);
         c.drops.value[d]!.set(c.dx[d]!, c.dy[d]!, rad, c.da[d]!);
       }
-      const rate = MELT.dropRate * h * h * (0.4 + clamp01(speed / 500));
+      const rate = dropRate(h, speed);
       if (mOn && h > 0.45 && Math.random() < rate * dt) spawn(c, i, nr);
 
       const need = h > 0 || live > 0;
