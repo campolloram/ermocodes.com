@@ -18,40 +18,49 @@ export function parseCssRgb(css: string): readonly [number, number, number] {
   return FALLBACK_RGB;
 }
 
-export interface MeltGate {
-  letters: number;
-  settled: boolean;
-  slow: boolean;
-  phone: boolean;
-  dust: number;
-  motion: boolean;
-  paused: boolean;
-  noHide: boolean;
+/** The two root-class checks of the gate, so tests can pass a plain stub. */
+export interface ClassProbe {
+  contains(name: string): boolean;
 }
 
-/** May a letter melt at all this frame? Anything false puts the plain DOM text back. */
-export function meltAllowed(g: MeltGate): boolean {
+/**
+ * May a letter melt at all this frame? Anything false puts the plain DOM text back.
+ * Plain arguments and `&&` order: no object per frame, and the DOM class reads only run once
+ * the cheap checks passed.
+ */
+export function meltAllowed(
+  letters: number,
+  settled: boolean,
+  slow: boolean,
+  phone: boolean,
+  dust: number,
+  classes: ClassProbe,
+  noHide: boolean,
+): boolean {
   return (
-    g.letters > 0 &&
-    g.settled &&
-    !g.slow &&
-    !g.phone &&
-    g.dust < 0.0005 &&
-    g.motion &&
-    !g.paused &&
-    !g.noHide
+    letters > 0 &&
+    settled &&
+    !slow &&
+    !phone &&
+    dust < 0.0005 &&
+    classes.contains('motion') &&
+    !classes.contains('mpaused') &&
+    !noHide
   );
 }
 
-/** Closeness 0..1 of the pointer to a letter box [l, t, r, b] (viewport px); 0 beyond the radius. */
+/** Closeness 0..1 of the pointer to a letter box (left, top, right, bottom in viewport px); 0 beyond the radius. */
 export function nearness(
-  box: readonly [number, number, number, number],
+  l: number,
+  t: number,
+  r: number,
+  b: number,
   px: number,
   py: number,
   radius: number = MELT.radius,
 ): number {
-  const dx = Math.max(box[0] - px, 0, px - box[2]);
-  const dy = Math.max(box[1] - py, 0, py - box[3]);
+  const dx = Math.max(l - px, 0, px - r);
+  const dy = Math.max(t - py, 0, py - b);
   return clamp01(1 - Math.hypot(dx, dy) / radius);
 }
 
@@ -71,20 +80,29 @@ export function dropRate(h: number, speed: number): number {
   return MELT.dropRate * h * h * (0.4 + clamp01(speed / 500));
 }
 
-export interface Drop {
-  y: number;
-  v: number;
-  life: number;
-  alpha: number;
-}
-
-/** One droplet step; `alpha` 0 means it is gone (life over, or it fell past the cell bottom). */
-export function stepDrop(d: Drop, dt: number, cellH: number): Drop {
-  const life = d.life - dt;
-  const v = d.v + MELT.dropGravity * dt;
-  const y = d.y + v * dt;
-  if (life <= 0 || y > cellH - 4) return { y, v, life, alpha: 0 };
-  return { y, v, life, alpha: clamp01(life * 2.2) };
+/**
+ * One droplet step in place on the cell's Float32Arrays (slot `i`), no allocation. Each value is
+ * stored (float32-rounded) before the next line reads it, exactly as the inline loop did.
+ * Sets alpha to 0 when it is gone (life over, or it fell past the cell bottom); returns "still live".
+ */
+export function stepDrop(
+  dy: Float32Array,
+  dv: Float32Array,
+  dl: Float32Array,
+  da: Float32Array,
+  i: number,
+  dt: number,
+  cellH: number,
+): boolean {
+  dl[i] = dl[i]! - dt;
+  dv[i] = dv[i]! + MELT.dropGravity * dt;
+  dy[i] = dy[i]! + dv[i]! * dt;
+  if (dl[i]! <= 0 || dy[i]! > cellH - 4) {
+    da[i] = 0;
+    return false;
+  }
+  da[i] = clamp01(dl[i]! * 2.2);
+  return true;
 }
 
 /** Drawn radius: shrinks to 60% as the droplet fades, never under 1 px. */

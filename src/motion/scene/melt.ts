@@ -302,9 +302,9 @@ export function createMelt(letters: Letter[], nameEl: HTMLElement): Melt {
     const slot = Array.prototype.findIndex.call(c.da, (a: number) => a <= 0);
     if (slot < 0) return;
     const px = pixelsOf(letters[i]!.c);
-    if (!px.length) return;
+    const best = lowestPick(px);
+    if (!best) return;
     const u = fs / 11;
-    const best = lowestPick(px)!;
     const x = MELT.pad.x * fs + (best[0] + 0.5) * u;
     const y = c.ink.value.y + (best[1] + 0.5) * u;
     if (Math.hypot(nr.left + c.x0 + x - cx, nr.top + c.y0 + y - cy) > MELT.radius * 0.9) return;
@@ -317,16 +317,15 @@ export function createMelt(letters: Letter[], nameEl: HTMLElement): Melt {
   }
 
   function update(time: number, dt: number, settled: boolean, slow: boolean): number {
-    const allowed = meltAllowed({
-      letters: NL,
+    const allowed = meltAllowed(
+      NL,
       settled,
       slow,
-      phone: view.phone,
-      dust: heroDust.p,
-      motion: root.classList.contains('motion'),
-      paused: root.classList.contains('mpaused'),
-      noHide: letterGuard.noHide,
-    });
+      view.phone,
+      heroDust.p,
+      root.classList,
+      letterGuard.noHide,
+    );
     if (!allowed) {
       if (activeN || watchdog) release();
       return 0;
@@ -365,7 +364,7 @@ export function createMelt(letters: Letter[], nameEl: HTMLElement): Melt {
       const c = cells[i]!;
       const b = c.box;
       const near = mOn
-        ? nearness([nr.left + b[0], nr.top + b[1], nr.left + b[2], nr.top + b[3]], cx, cy)
+        ? nearness(nr.left + b[0], nr.top + b[1], nr.left + b[2], nr.top + b[3], cx, cy)
         : 0;
       const h = stepHeat(c.heat.value, heatTarget(near), wall);
       c.heat.value = h;
@@ -373,16 +372,7 @@ export function createMelt(letters: Letter[], nameEl: HTMLElement): Melt {
       let live = 0;
       for (let d = 0; d < DROPS; d += 1) {
         if (c.da[d]! > 0) {
-          const nd = stepDrop(
-            { y: c.dy[d]!, v: c.dv[d]!, life: c.dl[d]!, alpha: c.da[d]! },
-            dt,
-            ch,
-          );
-          c.dl[d] = nd.life;
-          c.dv[d] = nd.v;
-          c.dy[d] = nd.y;
-          c.da[d] = nd.alpha;
-          if (nd.alpha > 0) live += 1;
+          if (stepDrop(c.dy, c.dv, c.dl, c.da, d, dt, ch)) live += 1;
         }
         const rad = dropRadius(c.dr[d]!, c.da[d]!);
         c.drops.value[d]!.set(c.dx[d]!, c.dy[d]!, rad, c.da[d]!);
