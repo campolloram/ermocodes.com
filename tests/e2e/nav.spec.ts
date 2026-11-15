@@ -515,6 +515,37 @@ for (const width of [412, 430]) {
   });
 }
 
+// Issue 12: at 481-599px the pause label wrapped to two lines and touched the brand.
+// Up to 599px the control is icon-only; from 600px the label shows on one line.
+for (const width of [481, 520, 540, 599, 600, 1440]) {
+  test(`the pause control keeps clear of the brand at ${width}px`, async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'chromium-desktop', 'viewport is set by the test');
+    await page.setViewportSize({ width, height: 844 });
+    await page.goto('/');
+    needsWebGL(testInfo, await settle(page, testInfo.project.name));
+    const ctlBox = await page.locator('.mctl').boundingBox();
+    const brand = await page.locator('.brand').boundingBox();
+    if (!brand || !ctlBox) throw new Error('header boxes missing');
+    const label = page.locator('.mctl > span').first();
+    if (width <= 599) {
+      // icon-only: the label is clipped to 1px and the button stays a 44px target
+      const lw = await label.evaluate((el) => el.getBoundingClientRect().width);
+      expect(lw, 'label is clipped').toBeLessThanOrEqual(1);
+      expect(ctlBox.width).toBeGreaterThanOrEqual(44);
+      expect(ctlBox.height).toBeGreaterThanOrEqual(44);
+    } else {
+      const lines = await label.evaluate((el) => {
+        const r = document.createRange();
+        r.selectNodeContents(el);
+        return new Set([...r.getClientRects()].map((q) => Math.round(q.top))).size;
+      });
+      expect(lines, 'label text occupies one line').toBe(1);
+    }
+    expect(brand.x + brand.width).toBeLessThanOrEqual(ctlBox.x - 4);
+    await expect(page.locator('.top')).toHaveJSProperty('scrollWidth', width);
+  });
+}
+
 test('on a phone the brand and the pause control draw their own focus ring', async ({
   page,
 }, testInfo) => {
